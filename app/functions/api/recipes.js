@@ -72,11 +72,12 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse({ ok: true, status: res.status, contentType: res.headers.get('content-type') });
     }
 
-    if (!env.GEMINI_API_KEY) {
+    const apiKey = String(env.GEMINI_API_KEY ?? '').trim().replace(/^GEMINI_API_KEY=/, '').trim();
+    if (!apiKey) {
       return jsonResponse({ error: 'GEMINI_API_KEY is not configured' }, 500);
     }
     if (requestUrl.searchParams.get('debug') === 'gemini') {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +120,7 @@ export async function onRequestPost({ request, env }) {
       : '';
     const userMessage = `以下の食材でレシピを3つ提案してください：${ingredientNames.join('、')}${conditionText}${avoidTitleText}`;
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
