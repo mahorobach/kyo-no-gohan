@@ -1,24 +1,21 @@
 import { GEMINI_MODEL, getGeminiApiKey, getGeminiGenerateContentUrl } from '../_shared/gemini.js';
 
 const SYSTEM_PROMPT = `あなたは日本の家庭料理に精通したプロシェフです。
-ユーザーから食材リストが与えられます。以下の条件で3つのレシピを考えてください。
+ユーザーから食材リストと生成条件が与えられます。以下の条件で2つのレシピを考えてください。
 
 【絶対ルール】
-- 3つすべてのレシピで、使える食材は入力された食材のみ。
+- 2つすべてのレシピで、使える食材は入力された食材のみ。
 - それ以外の野菜・肉・魚・豆腐・きのこ・乳製品などは一切追加しないこと。
 - 調味料（塩、砂糖、醤油、みりん、酒、味噌、油、酢、こしょう、だし、片栗粉など）のみ自由に使ってよい。
 
-【レシピ1】炒め物・焼き物系
-- 入力された食材を使った炒め物または焼き物のレシピ。
-
-【レシピ2】煮物・汁物系
-- 入力された食材を使った煮物または汁物のレシピ。
-
-【レシピ3】丼・ご飯物またはその他
-- 入力された食材を使った丼、ご飯物、または上記以外のジャンルのレシピ。
+【生成条件】
+- 生成条件が1つだけの場合、その条件に合うレシピを2つ返す。
+- 生成条件が2つある場合、1つ目の条件に合うレシピを1つ、2つ目の条件に合うレシピを1つ返す。
+- 生成条件が「おまかせ」または未指定の場合、家庭で作りやすい方向で2つ返す。
 
 共通ルール：
 - 味付けは日本の家庭料理に合うものにすること。
+- 各レシピには、該当する生成条件を category に入れること。
 - 必ず以下のJSON形式のみで返答すること。説明文・マークダウン記法は不要。
 
 返答形式（JSONのみ）：
@@ -31,6 +28,7 @@ const SYSTEM_PROMPT = `あなたは日本の家庭料理に精通したプロシ
       "yen": 一人あたりコスト（数値・円）,
       "kcal": カロリー（数値）,
       "diff": "かんたん または ふつう または むずかしい",
+      "category": "おまかせ または 指定された生成条件",
       "description": "料理の説明（2文以内）",
       "ingredients": [
         { "name": "食材名", "qty": "分量", "have": true, "extra": false }
@@ -58,6 +56,7 @@ const parseRecipes = (text) => {
   if (!Array.isArray(parsed.recipes)) {
     throw new Error('recipes array was not returned');
   }
+  parsed.recipes = parsed.recipes.slice(0, 2);
   return parsed;
 };
 
@@ -84,6 +83,9 @@ export async function onRequestPost({ request, env }) {
       ? payload.ingredientNames.map((name) => String(name).trim()).filter(Boolean)
       : [];
     const condition = typeof payload.condition === 'string' ? payload.condition.trim() : '';
+    const conditions = Array.isArray(payload.conditions)
+      ? payload.conditions.map((item) => String(item).trim()).filter(Boolean).slice(0, 2)
+      : condition ? [condition] : [];
     const avoidTitles = Array.isArray(payload.avoidTitles)
       ? payload.avoidTitles.map((title) => String(title).trim()).filter(Boolean)
       : [];
@@ -92,11 +94,13 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse({ error: '食材を1つ以上入力してください' }, 400);
     }
 
-    const conditionText = condition ? `\n追加条件: ${condition}を優先してください。` : '';
+    const conditionText = conditions.length
+      ? `\n生成条件: ${conditions.join('、')}`
+      : '\n生成条件: おまかせ';
     const avoidTitleText = avoidTitles.length
       ? `\n既存の料理名: ${avoidTitles.join('、')}\n上記と同じ、またはほぼ同じ料理名は避けてください。`
       : '';
-    const userMessage = `以下の食材でレシピを3つ提案してください：${ingredientNames.join('、')}${conditionText}${avoidTitleText}`;
+    const userMessage = `以下の食材でレシピを2つ提案してください：${ingredientNames.join('、')}${conditionText}${avoidTitleText}`;
 
     const apiUrl = getGeminiGenerateContentUrl();
     const res = await fetch(apiUrl, {
@@ -108,7 +112,7 @@ export async function onRequestPost({ request, env }) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+        generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
       }),
     });
 

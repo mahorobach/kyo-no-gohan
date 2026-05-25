@@ -89,7 +89,7 @@ export default function ScreenProfile({
 
   const handleTab = (tab) => {
     if (tab === 'home') navigate('home');
-    if (tab === 'fridge') navigate('camera');
+    if (tab === 'fridge') navigate('textInput');
     if (tab === 'saved') navigate('saved');
   };
 

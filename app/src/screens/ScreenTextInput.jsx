@@ -26,12 +26,13 @@ const ALL_INGREDIENTS = [
 ];
 
 const CONDITIONS = ['おまかせ', '時短', '節約', 'がっつり', 'やさしい味', '汁物', 'お弁当'];
+const MAX_SELECTED_CONDITIONS = 2;
 
 export default function ScreenTextInput({ navigate, ingredients = [], onGenerateRecipes }) {
   const ingredientsKey = ingredients.map((item) => item.name).join('|');
   const [draft, setDraft] = useState({ ingredientsKey, entered: ingredients });
   const [inputValue, setInputValue] = useState('');
-  const [selectedCondition, setSelectedCondition] = useState('おまかせ');
+  const [selectedConditions, setSelectedConditions] = useState(['おまかせ']);
   let entered = draft.entered;
 
   if (draft.ingredientsKey !== ingredientsKey) {
@@ -70,6 +71,26 @@ export default function ScreenTextInput({ navigate, ingredients = [], onGenerate
     setEntered(prev => prev.filter(e => e.name !== name));
   };
 
+  const toggleCondition = (condition) => {
+    setSelectedConditions((current) => {
+      if (condition === 'おまかせ') return ['おまかせ'];
+
+      const withoutDefault = current.filter((item) => item !== 'おまかせ');
+      if (withoutDefault.includes(condition)) {
+        const next = withoutDefault.filter((item) => item !== condition);
+        return next.length ? next : ['おまかせ'];
+      }
+
+      if (withoutDefault.length >= MAX_SELECTED_CONDITIONS) {
+        return [withoutDefault[0], condition];
+      }
+
+      return [...withoutDefault, condition];
+    });
+  };
+
+  const selectedConditionLabel = selectedConditions.join('・');
+
   return (
     <Paper color={T.bg} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
 
@@ -102,17 +123,18 @@ export default function ScreenTextInput({ navigate, ingredients = [], onGenerate
           display: 'flex', gap: 4,
         }}>
           {[
-            { k: 'photo', label: '写真で判定', on: false },
+            { k: 'photo', label: '写真は準備中', on: false },
             { k: 'text', label: '文字で入力', on: true },
           ].map(t => (
-            <div key={t.k} onClick={() => { if (t.k === 'photo') navigate('camera'); }} style={{
+            <div key={t.k} style={{
               flex: 1, padding: '8px 0', borderRadius: 9,
               textAlign: 'center',
               background: t.on ? T.surface : 'transparent',
               color: t.on ? T.ink : T.inkMuted,
               fontFamily: FONT.sans, fontSize: 12, fontWeight: t.on ? 600 : 500,
               boxShadow: t.on ? '0 1px 2px rgba(0,0,0,0.06)' : undefined,
-              cursor: 'pointer',
+              cursor: t.on ? 'default' : 'not-allowed',
+              opacity: t.on ? 1 : 0.7,
             }}>{t.label}</div>
           ))}
         </div>
@@ -130,16 +152,26 @@ export default function ScreenTextInput({ navigate, ingredients = [], onGenerate
 
         {/* 生成条件 */}
         <div style={{ padding: '18px 22px 0' }}>
-          <div style={{ fontFamily: FONT.sans, fontSize: 11, color: T.inkMuted, letterSpacing: '0.12em', marginBottom: 8 }}>
-            希望に近いもの
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            marginBottom: 8,
+          }}>
+            <div style={{ fontFamily: FONT.sans, fontSize: 11, color: T.inkMuted, letterSpacing: '0.12em' }}>
+              希望に近いもの
+            </div>
+            <div style={{ fontFamily: FONT.sans, fontSize: 11, color: T.inkMuted }}>
+              最大2つ
+            </div>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {CONDITIONS.map((condition) => {
-              const active = selectedCondition === condition;
+              const active = selectedConditions.includes(condition);
               return (
                 <button
                   key={condition}
-                  onClick={() => setSelectedCondition(condition)}
+                  onClick={() => toggleCondition(condition)}
                   style={{
                     border: `1px solid ${active ? T.terracotta : T.line}`,
                     background: active ? T.terracottaTint : T.surface,
@@ -279,10 +311,10 @@ export default function ScreenTextInput({ navigate, ingredients = [], onGenerate
             onClick={() => onGenerateRecipes && onGenerateRecipes(
               entered,
               'text',
-              selectedCondition === 'おまかせ' ? '' : selectedCondition,
+              selectedConditions,
             )}
           >
-            レシピを提案してもらう（{entered.length}品）
+            {selectedConditionLabel}で2品つくる
           </Btn>
         </div>
       )}

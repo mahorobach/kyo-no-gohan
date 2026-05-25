@@ -123,7 +123,7 @@ function StartPanel({ ingredients, onGenerate, onEdit }) {
       }}>
         {hasIngredients
           ? '同じ材料で、新しい献立を提案できます。'
-          : '写真で判定するか、文字で食材を入力して献立を作れます。'}
+          : '文字で食材を入力して、今日の献立を作れます。'}
       </div>
 
       {hasIngredients && (
@@ -145,14 +145,9 @@ function StartPanel({ ingredients, onGenerate, onEdit }) {
             </Btn>
           </>
         ) : (
-          <>
-            <Btn kind="primary" style={{ flex: 1, height: 44, fontSize: 13 }} onClick={() => onEdit('camera')}>
-              写真で判定
-            </Btn>
-            <Btn kind="soft" style={{ flex: 1, height: 44, fontSize: 13 }} onClick={() => onEdit('textInput')}>
-              文字で入力
-            </Btn>
-          </>
+          <Btn kind="accent" style={{ flex: 1, height: 44, fontSize: 13 }} onClick={() => onEdit('textInput')}>
+            食材を入力する
+          </Btn>
         )}
       </div>
     </div>
@@ -248,16 +243,12 @@ export default function HomeA({
   };
 
   const handleStartEdit = (to = 'textInput') => {
-    if (to === 'camera') {
-      navigate('camera');
-    } else {
-      navigate('textInput');
-    }
+    navigate(to === 'camera' ? 'textInput' : to);
   };
 
   const handleTab = (tab) => {
     if (tab === 'saved') navigate('saved');
-    if (tab === 'fridge') navigate('camera');
+    if (tab === 'fridge') navigate('textInput');
     if (tab === 'me') navigate('profile');
   };
 
@@ -297,8 +288,8 @@ export default function HomeA({
             <div style={{ padding: '16px 22px 0' }}>
               <Eyebrow color={T.terracotta}>新しく探す</Eyebrow>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
-                <Btn kind="primary" style={{ height: 44, fontSize: 13 }} onClick={() => navigate('camera')}>
-                  写真で判定
+                <Btn kind="primary" style={{ height: 44, fontSize: 13 }} onClick={() => navigate('textInput')}>
+                  食材を入力
                 </Btn>
                 <Btn kind="soft" style={{ height: 44, fontSize: 13 }} onClick={() => navigate('textInput')}>
                   文字で入力

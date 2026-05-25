@@ -6,7 +6,7 @@ const tabs = [
     icon: <path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-7H9v7H5a2 2 0 01-2-2v-9z" />,
   },
   {
-    k: 'fridge', label: '冷蔵庫',
+    k: 'fridge', label: '食材',
     icon: <path d="M5 3h14a1 1 0 011 1v16a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1zm0 8h14M8 7v2M8 14v3" />,
   },
   {

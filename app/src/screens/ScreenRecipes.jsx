@@ -38,9 +38,9 @@ const RECIPES = [
     tone: 'terracotta',
     kcal: 540,
   },
-];
+].slice(0, 2);
 
-const CONDITIONS = ['時短', '節約', 'がっつり', 'やさしい味', '汁物', 'お弁当'];
+const CONDITIONS = ['おまかせ', '時短', '節約', 'がっつり', 'やさしい味', '汁物', 'お弁当'];
 
 function Meta({ value, unit, yen }) {
   if (yen) return <YenStamp value={yen} />;
@@ -112,7 +112,7 @@ function RecipeCard({ r, idx, featured, onPress }) {
       {/* カードボディ */}
       <div style={{ padding: '18px 18px 18px', minHeight: 150 }}>
         <div style={{ fontFamily: FONT.sans, fontSize: 10, color: T.inkMuted, letterSpacing: '0.18em' }}>
-          {r.kana}
+          {r.category ?? r.kana}
         </div>
         {r.description && (
           <div style={{
@@ -175,6 +175,7 @@ export default function ScreenRecipes({
   addError,
   ingredients,
   inputSource,
+  generationLabel = 'おまかせ',
   addingRecipes,
   onSelectRecipe,
   onAddRecipes,
@@ -214,7 +215,7 @@ export default function ScreenRecipes({
           ご提案します
         </div>
         <div style={{ fontFamily: FONT.sans, fontSize: 12, color: T.inkSoft, marginTop: 8, lineHeight: 1.6 }}>
-          {ingredients?.length ?? 0}つの食材から、<span style={{ color: T.ink, fontWeight: 600 }}>節約優先</span>でえらびました
+          {ingredients?.length ?? 0}つの食材から、<span style={{ color: T.ink, fontWeight: 600 }}>{generationLabel}</span>でえらびました
         </div>
       </div>
 

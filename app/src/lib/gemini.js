@@ -14,7 +14,10 @@ const readImageFile = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export async function fetchRecipes(ingredientNames, condition = '', avoidTitles = []) {
+export async function fetchRecipes(ingredientNames, conditions = [], avoidTitles = []) {
+  const selectedConditions = Array.isArray(conditions)
+    ? conditions
+    : conditions ? [conditions] : [];
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -24,7 +27,7 @@ export async function fetchRecipes(ingredientNames, condition = '', avoidTitles 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({ ingredientNames, condition, avoidTitles }),
+      body: JSON.stringify({ ingredientNames, conditions: selectedConditions, avoidTitles }),
     });
   } catch (e) {
     if (e.name === 'AbortError') {

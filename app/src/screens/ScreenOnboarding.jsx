@@ -75,7 +75,7 @@ export default function ScreenOnboarding({ navigate }) {
             fontFamily: FONT.serif, fontSize: 28, fontWeight: 600, color: T.ink,
             lineHeight: 1.4, letterSpacing: '0.01em', marginTop: 12,
           }}>
-            冷蔵庫を見せれば、<br />
+            食材を入れれば、<br />
             今日のごはんが<br />
             <span style={{ position: 'relative', display: 'inline-block' }}>
               決まる。
@@ -86,8 +86,8 @@ export default function ScreenOnboarding({ navigate }) {
             fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft,
             lineHeight: 1.8, marginTop: 18,
           }}>
-            写真をとるだけで、AIが食材を見つけて<br />
-            節約できるレシピを3つ提案します。
+            食材を文字で入れるだけで、AIが<br />
+            条件に合わせてレシピを2つ提案します。
           </div>
         </div>
 

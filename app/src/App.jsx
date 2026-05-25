@@ -109,18 +109,33 @@ const getPhotoFallbackMessage = (error) => {
     : '写真判定がうまく応答しなかったため、サンプル食材で表示しています。';
 };
 
-const makeMockRecipes = (ingredients, condition = '') => {
+const normalizeConditions = (conditions = []) => {
+  const selected = Array.isArray(conditions)
+    ? conditions
+    : conditions ? [conditions] : [];
+  const cleaned = selected.map((item) => String(item).trim()).filter(Boolean);
+  if (!cleaned.length || cleaned.includes('おまかせ')) return ['おまかせ'];
+  return cleaned.slice(0, 2);
+};
+
+const getConditionLabel = (conditions = []) => normalizeConditions(conditions).join('・');
+
+const makeMockRecipes = (ingredients, conditions = []) => {
+  const selectedConditions = normalizeConditions(conditions);
   const names = ingredients.map((i) => i.name);
   const main = names[0] ?? '野菜';
   const second = names[1] ?? names[0] ?? '食材';
-  const third = names[2] ?? names[0] ?? '具材';
-  const prefix = condition ? `${condition} ` : '';
-  const kana = condition || 'いまある食材だけで';
+  const third = names[2] ?? second;
+  const firstCategory = selectedConditions[0] ?? 'おまかせ';
+  const secondCategory = selectedConditions[1] ?? firstCategory;
+  const firstPrefix = firstCategory === 'おまかせ' ? '' : `${firstCategory} `;
+  const secondPrefix = secondCategory === 'おまかせ' ? '' : `${secondCategory} `;
 
   return [
     {
-      title: `${prefix}${main}と${second}の香ばし炒め`,
-      kana,
+      title: `${firstPrefix}${main}と${second}の香ばし炒め`,
+      kana: firstCategory,
+      category: firstCategory,
       time: 15,
       yen: 180,
       kcal: 420,
@@ -137,8 +152,9 @@ const makeMockRecipes = (ingredients, condition = '') => {
       ],
     },
     {
-      title: `${prefix}${main}と${third}のやさしい汁もの`,
-      kana: condition || 'ほっとする味',
+      title: `${secondPrefix}${main}と${third}のやさしい汁もの`,
+      kana: secondCategory,
+      category: secondCategory,
       time: 18,
       yen: 160,
       kcal: 260,
@@ -151,26 +167,6 @@ const makeMockRecipes = (ingredients, condition = '') => {
         '鍋に水とだしを入れ、材料をやわらかくなるまで煮る。',
         '味噌またはしょうゆで味をととのえる。',
         '仕上げにこしょうやごま油を少量加える。',
-      ],
-    },
-    {
-      title: `${prefix}${second}の満足どんぶり`,
-      kana: condition || 'ごはんがすすむ',
-      time: 12,
-      yen: 200,
-      kcal: 520,
-      diff: 'ふつう',
-      tone: 'terracotta',
-      description: `${second}を主役にした、短時間で作れるごはんものです。甘辛い味付けで満足感を出します。`,
-      ingredients: [
-        ...names.map((name) => ({ name, qty: '適量', have: true })),
-        { name: 'ごはん', qty: '1杯', have: true },
-      ],
-      steps: [
-        '材料を小さめに切る。',
-        'フライパンで材料を炒め、しょうゆ、みりん、酒で味付けする。',
-        '汁気が少し残る程度まで煮からめる。',
-        'ごはんにのせて完成。',
       ],
     },
   ];
@@ -207,6 +203,7 @@ export default function App() {
   const [photoCount, setPhotoCount] = useState(0);
   const [photoAnalysisLoading, setPhotoAnalysisLoading] = useState(false);
   const [photoAnalysisError, setPhotoAnalysisError] = useState(null);
+  const [generationConditions, setGenerationConditions] = useState(['おまかせ']);
   const [addingRecipes, setAddingRecipes] = useState(false);
   const [addError, setAddError] = useState(null);
 
@@ -299,12 +296,13 @@ export default function App() {
     setProfile((current) => ({ ...current, ...nextProfile }));
   };
 
-  const handleGenerateRecipes = async (ingredients, source = 'text', condition = '') => {
+  const handleGenerateRecipes = async (ingredients, source = 'text', conditions = ['おまかせ']) => {
     if (!ingredients.length) {
       setError('食材を1つ以上入力してください');
       return;
     }
 
+    const selectedConditions = normalizeConditions(conditions);
     setLoading(true);
     setError(null);
     setAddError(null);
@@ -312,14 +310,15 @@ export default function App() {
     setSelectedRecipe(null);
     setSubmittedIngredients(ingredients);
     setInputSource(source);
+    setGenerationConditions(selectedConditions);
     navigate('recipes');
 
     try {
-      const result = await fetchRecipes(ingredients.map((i) => i.name), condition);
+      const result = await fetchRecipes(ingredients.map((i) => i.name), selectedConditions);
       setRecipes(result.recipes);
       rememberRecipes(result.recipes);
     } catch (apiError) {
-      const mockRecipes = makeMockRecipes(ingredients, condition);
+      const mockRecipes = makeMockRecipes(ingredients, selectedConditions);
       setRecipes(mockRecipes);
       rememberRecipes(mockRecipes);
       setError(getApiFallbackMessage(apiError));
@@ -328,7 +327,7 @@ export default function App() {
     }
   };
 
-  const handleAddRecipes = async (condition = '') => {
+  const handleAddRecipes = async (conditions = generationConditions) => {
     if (!submittedIngredients.length) {
       setAddError('食材を1つ以上入力してください');
       navigate('textInput');
@@ -340,12 +339,15 @@ export default function App() {
 
     const existingRecipes = recipes ?? [];
     const existingTitles = existingRecipes.map((recipe) => recipe.title).filter(Boolean);
-    const mockCondition = condition || `別案${Math.floor(existingRecipes.length / 3) + 1}`;
+    const selectedConditions = normalizeConditions(conditions);
+    const mockConditions = selectedConditions[0] === 'おまかせ'
+      ? [`別案${Math.floor(existingRecipes.length / 2) + 1}`]
+      : selectedConditions;
 
     try {
       const result = await fetchRecipes(
         submittedIngredients.map((i) => i.name),
-        condition,
+        selectedConditions,
         existingTitles,
       );
       const { merged, added } = mergeUniqueRecipes(existingRecipes, result.recipes);
@@ -355,7 +357,7 @@ export default function App() {
         setAddError('似たタイトルの提案だったため、重複分は追加しませんでした。');
       }
     } catch (apiError) {
-      const mockRecipes = makeMockRecipes(submittedIngredients, mockCondition);
+      const mockRecipes = makeMockRecipes(submittedIngredients, mockConditions);
       const { merged, added } = mergeUniqueRecipes(existingRecipes, mockRecipes);
       setRecipes(merged);
       rememberRecipes(added);
@@ -449,6 +451,7 @@ export default function App() {
           photoAnalysisError={photoAnalysisError}
           ingredients={submittedIngredients}
           inputSource={inputSource}
+          generationLabel={getConditionLabel(generationConditions)}
           addingRecipes={addingRecipes}
           onGenerateRecipes={handleGenerateRecipes}
           onAddRecipes={handleAddRecipes}
