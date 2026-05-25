@@ -75,6 +75,24 @@ export async function onRequestPost({ request, env }) {
     if (!env.GEMINI_API_KEY) {
       return jsonResponse({ error: 'GEMINI_API_KEY is not configured' }, 500);
     }
+    if (requestUrl.searchParams.get('debug') === 'gemini') {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: 'こんにちは。短く返事してください。' }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 128 },
+        }),
+      });
+      const text = await res.text();
+      return jsonResponse({
+        ok: res.ok,
+        status: res.status,
+        contentType: res.headers.get('content-type'),
+        bodyStart: text.slice(0, 500),
+      }, res.ok ? 200 : 502);
+    }
 
     let payload;
     try {
