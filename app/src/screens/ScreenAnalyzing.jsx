@@ -46,7 +46,12 @@ function CamPill({ children, onClick }) {
   );
 }
 
-export default function ScreenAnalyzing({ navigate, detectedIngredients = [] }) {
+export default function ScreenAnalyzing({
+  navigate,
+  detectedIngredients = [],
+  photoAnalysisLoading = false,
+  photoAnalysisError = null,
+}) {
   const [visibleCount, setVisibleCount] = useState(0);
   const allDetected = useMemo(
     () => (detectedIngredients.length ? detectedIngredients : FALLBACK_DETECTED).map((item, index) => ({
@@ -57,14 +62,17 @@ export default function ScreenAnalyzing({ navigate, detectedIngredients = [] }) 
   );
 
   useEffect(() => {
-    const timers = [];
+    const resetTimer = setTimeout(() => setVisibleCount(0), 0);
+    if (photoAnalysisLoading) return () => clearTimeout(resetTimer);
+
+    const timers = [resetTimer];
     allDetected.forEach((_, i) => {
       timers.push(setTimeout(() => setVisibleCount(i + 1), 600 + i * 700));
     });
     // 全検出後に自動遷移
     timers.push(setTimeout(() => navigate('ingredients'), 600 + allDetected.length * 700 + 800));
     return () => timers.forEach(clearTimeout);
-  }, [allDetected, navigate]);
+  }, [allDetected, navigate, photoAnalysisLoading]);
 
   const detected = allDetected.slice(0, visibleCount);
 
@@ -130,7 +138,7 @@ export default function ScreenAnalyzing({ navigate, detectedIngredients = [] }) 
             background: 'rgba(255,255,255,0.12)',
             backdropFilter: 'blur(12px)',
             letterSpacing: '0.08em',
-          }}>食材を見つけているよ…</div>
+          }}>{photoAnalysisLoading ? '写真を読み取っています…' : '食材を見つけているよ…'}</div>
           <div style={{ width: 38 }} />
         </div>
       </div>
@@ -147,10 +155,10 @@ export default function ScreenAnalyzing({ navigate, detectedIngredients = [] }) 
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
           <div style={{ fontFamily: FONT.serif, fontSize: 18, fontWeight: 600, color: T.ink }}>
-            食材を見つけました
+            {photoAnalysisLoading ? '写真を解析中です' : '食材を見つけました'}
           </div>
           <div style={{ fontFamily: FONT.mono, fontSize: 12, color: T.sageDeep }}>
-            <span style={{ fontSize: 18, fontWeight: 600 }}>{visibleCount}</span> / {allDetected.length}
+            <span style={{ fontSize: 18, fontWeight: 600 }}>{photoAnalysisLoading ? 0 : visibleCount}</span> / {photoAnalysisLoading ? '...' : allDetected.length}
           </div>
         </div>
 
@@ -171,7 +179,30 @@ export default function ScreenAnalyzing({ navigate, detectedIngredients = [] }) 
               </svg>
             </div>
           ))}
-          {visibleCount < allDetected.length && (
+          {photoAnalysisLoading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: 0.95 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                border: `2px dashed ${T.amber}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: FONT.mono, fontSize: 14, color: T.amber, fontWeight: 700,
+              }}>?</div>
+              <div style={{ flex: 1, fontFamily: FONT.serif, fontSize: 14, color: T.inkMuted, fontStyle: 'italic' }}>
+                Geminiで食材を判定しています…
+              </div>
+              <div style={{ display: 'flex', gap: 3 }}>
+                <Dot delay={0} />
+                <Dot delay={0.2} />
+                <Dot delay={0.4} />
+              </div>
+            </div>
+          )}
+          {photoAnalysisError && !photoAnalysisLoading && (
+            <div style={{ fontFamily: FONT.sans, fontSize: 12, lineHeight: 1.6, color: T.terracotta }}>
+              {photoAnalysisError}
+            </div>
+          )}
+          {!photoAnalysisLoading && visibleCount < allDetected.length && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: 0.95 }}>
               <div style={{
                 width: 32, height: 32, borderRadius: '50%',

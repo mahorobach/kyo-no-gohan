@@ -28,7 +28,7 @@ export default function ScreenCamera({ navigate, onAnalyzePhoto }) {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       if (onAnalyzePhoto) {
-        onAnalyzePhoto(e.target.files.length);
+        onAnalyzePhoto(Array.from(e.target.files));
       } else {
         navigate('analyzing');
       }

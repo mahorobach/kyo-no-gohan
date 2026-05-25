@@ -11,7 +11,7 @@ import ScreenSaved from './screens/ScreenSaved';
 import ScreenCooking from './screens/ScreenCooking';
 import ScreenHistory from './screens/ScreenHistory';
 import ScreenProfile from './screens/ScreenProfile';
-import { fetchRecipes } from './lib/gemini';
+import { analyzeIngredientPhotos, fetchRecipes } from './lib/gemini';
 
 const RECENT_RECIPE_LIMIT = 12;
 const SAVED_RECIPES_STORAGE_KEY = 'kyou-no-gohan:saved-recipes';
@@ -98,6 +98,15 @@ const getApiFallbackMessage = (error, action = 'display') => {
   return action === 'add'
     ? 'APIがうまく応答しなかったため、サンプル提案を追加しました。'
     : 'APIがうまく応答しなかったため、サンプル提案で表示しています。';
+};
+
+const getPhotoFallbackMessage = (error) => {
+  const message = error instanceof Error ? error.message : '';
+  const isQuotaError = /429|quota|RESOURCE_EXHAUSTED|rate/i.test(message);
+
+  return isQuotaError
+    ? 'AI判定の無料枠上限に達したため、サンプル食材で表示しています。少し時間をおいてもう一度試してください。'
+    : '写真判定がうまく応答しなかったため、サンプル食材で表示しています。';
 };
 
 const makeMockRecipes = (ingredients, condition = '') => {
@@ -196,6 +205,8 @@ export default function App() {
   const [profile, setProfile] = useState(loadProfile);
   const [detectedIngredients, setDetectedIngredients] = useState([]);
   const [photoCount, setPhotoCount] = useState(0);
+  const [photoAnalysisLoading, setPhotoAnalysisLoading] = useState(false);
+  const [photoAnalysisError, setPhotoAnalysisError] = useState(null);
   const [addingRecipes, setAddingRecipes] = useState(false);
   const [addError, setAddError] = useState(null);
 
@@ -233,20 +244,51 @@ export default function App() {
     });
   };
 
-  const handleAnalyzePhoto = (selectedPhotoCount = 1) => {
-    const nextPhotoCount = photoCount + Math.max(1, selectedPhotoCount);
+  const addDetectedIngredients = (nextIngredients) => {
+    setDetectedIngredients((current) => {
+      const seen = new Set(current.map((item) => item.name));
+      const additions = nextIngredients.filter((item) => !seen.has(item.name));
+      return [...current, ...additions];
+    });
+  };
+
+  const addMockPhotoIngredients = (selectedPhotoCount = 1) => {
     const batches = Array.from(
       { length: Math.max(1, selectedPhotoCount) },
       (_, index) => MOCK_PHOTO_BATCHES[(photoCount + index) % MOCK_PHOTO_BATCHES.length],
     ).flat();
 
-    setPhotoCount(nextPhotoCount);
-    setDetectedIngredients((current) => {
-      const seen = new Set(current.map((item) => item.name));
-      const additions = batches.filter((item) => !seen.has(item.name));
-      return [...current, ...additions];
-    });
+    addDetectedIngredients(batches);
+  };
+
+  const handleAnalyzePhoto = async (selectedPhotos = 1) => {
+    const photoFiles = Array.isArray(selectedPhotos) ? selectedPhotos : [];
+    const selectedPhotoCount = photoFiles.length || Number(selectedPhotos) || 1;
+
+    setPhotoCount((current) => current + Math.max(1, selectedPhotoCount));
+    setPhotoAnalysisError(null);
     navigate('analyzing');
+
+    if (!photoFiles.length) {
+      addMockPhotoIngredients(selectedPhotoCount);
+      return;
+    }
+
+    setPhotoAnalysisLoading(true);
+    try {
+      const result = await analyzeIngredientPhotos(photoFiles);
+      if (result.ingredients?.length) {
+        addDetectedIngredients(result.ingredients);
+      } else {
+        addMockPhotoIngredients(selectedPhotoCount);
+        setPhotoAnalysisError('写真から食材を見つけられなかったため、サンプル食材で表示しています。');
+      }
+    } catch (apiError) {
+      addMockPhotoIngredients(selectedPhotoCount);
+      setPhotoAnalysisError(getPhotoFallbackMessage(apiError));
+    } finally {
+      setPhotoAnalysisLoading(false);
+    }
   };
 
   const handleChangeDetectedIngredients = (nextIngredients) => {
@@ -403,6 +445,8 @@ export default function App() {
           savedRecipes={savedRecipes}
           detectedIngredients={detectedIngredients}
           photoCount={photoCount}
+          photoAnalysisLoading={photoAnalysisLoading}
+          photoAnalysisError={photoAnalysisError}
           ingredients={submittedIngredients}
           inputSource={inputSource}
           addingRecipes={addingRecipes}

@@ -1,4 +1,4 @@
-const API_MODEL = 'gemini-3.1-flash-lite';
+import { GEMINI_MODEL, getGeminiApiKey, getGeminiGenerateContentUrl } from '../_shared/gemini.js';
 
 const SYSTEM_PROMPT = `あなたは日本の家庭料理に精通したプロシェフです。
 ユーザーから食材リストが与えられます。以下の条件で3つのレシピを考えてください。
@@ -65,10 +65,10 @@ export async function onRequestPost({ request, env }) {
   try {
     const requestUrl = new URL(request.url);
     if (requestUrl.searchParams.get('health') === '1') {
-      return jsonResponse({ ok: true, model: API_MODEL });
+      return jsonResponse({ ok: true, model: GEMINI_MODEL });
     }
 
-    const apiKey = String(env.GEMINI_API_KEY ?? '').trim().replace(/^GEMINI_API_KEY=/, '').trim();
+    const apiKey = getGeminiApiKey(env);
     if (!apiKey) {
       return jsonResponse({ error: 'GEMINI_API_KEY is not configured' }, 500);
     }
@@ -98,7 +98,7 @@ export async function onRequestPost({ request, env }) {
       : '';
     const userMessage = `以下の食材でレシピを3つ提案してください：${ingredientNames.join('、')}${conditionText}${avoidTitleText}`;
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent`;
+    const apiUrl = getGeminiGenerateContentUrl();
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -133,5 +133,5 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestGet() {
-  return jsonResponse({ ok: true, model: API_MODEL });
+  return jsonResponse({ ok: true, model: GEMINI_MODEL });
 }
