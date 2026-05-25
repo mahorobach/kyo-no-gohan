@@ -85,6 +85,21 @@ const mergeUniqueRecipes = (currentRecipes = [], nextRecipes = []) => {
   };
 };
 
+const getApiFallbackMessage = (error, action = 'display') => {
+  const message = error instanceof Error ? error.message : '';
+  const isQuotaError = /429|quota|RESOURCE_EXHAUSTED|rate/i.test(message);
+
+  if (isQuotaError) {
+    return action === 'add'
+      ? 'AI生成の無料枠上限に達したため、サンプル提案を追加しました。少し時間をおいてもう一度試してください。'
+      : 'AI生成の無料枠上限に達したため、サンプル提案で表示しています。少し時間をおいてもう一度試してください。';
+  }
+
+  return action === 'add'
+    ? 'APIがうまく応答しなかったため、サンプル提案を追加しました。'
+    : 'APIがうまく応答しなかったため、サンプル提案で表示しています。';
+};
+
 const makeMockRecipes = (ingredients, condition = '') => {
   const names = ingredients.map((i) => i.name);
   const main = names[0] ?? '野菜';
@@ -261,11 +276,11 @@ export default function App() {
       const result = await fetchRecipes(ingredients.map((i) => i.name), condition);
       setRecipes(result.recipes);
       rememberRecipes(result.recipes);
-    } catch {
+    } catch (apiError) {
       const mockRecipes = makeMockRecipes(ingredients, condition);
       setRecipes(mockRecipes);
       rememberRecipes(mockRecipes);
-      setError('APIが混み合っているため、サンプル提案で表示しています。');
+      setError(getApiFallbackMessage(apiError));
     } finally {
       setLoading(false);
     }
@@ -297,12 +312,12 @@ export default function App() {
       if (!added.length) {
         setAddError('似たタイトルの提案だったため、重複分は追加しませんでした。');
       }
-    } catch {
+    } catch (apiError) {
       const mockRecipes = makeMockRecipes(submittedIngredients, mockCondition);
       const { merged, added } = mergeUniqueRecipes(existingRecipes, mockRecipes);
       setRecipes(merged);
       rememberRecipes(added);
-      setAddError('APIが混み合っているため、サンプル提案を追加しました。');
+      setAddError(getApiFallbackMessage(apiError, 'add'));
     } finally {
       setAddingRecipes(false);
     }

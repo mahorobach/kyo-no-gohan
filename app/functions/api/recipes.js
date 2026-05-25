@@ -64,46 +64,13 @@ const parseRecipes = (text) => {
 export async function onRequestPost({ request, env }) {
   try {
     const requestUrl = new URL(request.url);
-    if (requestUrl.searchParams.get('debug') === '1') {
-      return jsonResponse({ ok: true, model: API_MODEL, hasApiKey: Boolean(env.GEMINI_API_KEY) });
-    }
-    if (requestUrl.searchParams.get('debug') === 'fetch') {
-      const res = await fetch('https://generativelanguage.googleapis.com');
-      return jsonResponse({ ok: true, status: res.status, contentType: res.headers.get('content-type') });
+    if (requestUrl.searchParams.get('health') === '1') {
+      return jsonResponse({ ok: true, model: API_MODEL });
     }
 
     const apiKey = String(env.GEMINI_API_KEY ?? '').trim().replace(/^GEMINI_API_KEY=/, '').trim();
     if (!apiKey) {
       return jsonResponse({ error: 'GEMINI_API_KEY is not configured' }, 500);
-    }
-    if (requestUrl.searchParams.get('debug') === 'key') {
-      return jsonResponse({
-        ok: true,
-        length: apiKey.length,
-        asciiOnly: /^[\x20-\x7E]+$/.test(apiKey),
-        startsWithAi: apiKey.startsWith('AI'),
-      });
-    }
-    if (requestUrl.searchParams.get('debug') === 'gemini') {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent`;
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: 'こんにちは。短く返事してください。' }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 128 },
-        }),
-      });
-      const text = await res.text();
-      return jsonResponse({
-        ok: res.ok,
-        status: res.status,
-        contentType: res.headers.get('content-type'),
-        bodyStart: text.slice(0, 500),
-      });
     }
 
     let payload;
@@ -148,7 +115,13 @@ export async function onRequestPost({ request, env }) {
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
       const msg = errBody?.error?.message ?? res.status;
-      return jsonResponse({ error: `Gemini API error: ${msg}` }, 500);
+      return jsonResponse(
+        {
+          error: `Gemini API error: ${msg}`,
+          status: errBody?.error?.status,
+        },
+        res.status === 429 ? 429 : 500,
+      );
     }
 
     const data = await res.json();
