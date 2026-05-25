@@ -1,5 +1,4 @@
 const API_MODEL = 'gemini-3.5-flash';
-const REQUEST_TIMEOUT_MS = 20000;
 
 const SYSTEM_PROMPT = `あなたは日本の家庭料理に精通したプロシェフです。
 ユーザーから食材リストが与えられます。以下の条件で3つのレシピを考えてください。
@@ -92,15 +91,11 @@ export async function onRequestPost({ request, env }) {
     : '';
   const userMessage = `以下の食材でレシピを3つ提案してください：${ingredientNames.join('、')}${conditionText}${avoidTitleText}`;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
   try {
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
       body: JSON.stringify({
         system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents: [{ role: 'user', parts: [{ text: userMessage }] }],
@@ -118,11 +113,10 @@ export async function onRequestPost({ request, env }) {
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     return jsonResponse(parseRecipes(text));
   } catch (error) {
-    if (error.name === 'AbortError') {
-      return jsonResponse({ error: 'Gemini API request timed out' }, 504);
-    }
     return jsonResponse({ error: error.message ?? 'Unexpected API error' }, 500);
-  } finally {
-    clearTimeout(timeoutId);
   }
+}
+
+export async function onRequestGet() {
+  return jsonResponse({ ok: true, model: API_MODEL });
 }
