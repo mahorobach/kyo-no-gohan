@@ -1,16 +1,36 @@
-# React + Vite
+# きょうのごはん
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite のレシピ提案Webアプリです。
 
-Currently, two official plugins are available:
+## ローカル開発
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+ローカルのViteだけで起動した場合、`/api/recipes` は存在しないため、Gemini API呼び出しは失敗してモック提案にフォールバックします。
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Cloudflare Pages
 
-## Expanding the ESLint configuration
+- Framework preset: `Vite`
+- Root directory: `app`
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Functions directory: `functions`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 環境変数
+
+Cloudflare Pages の環境変数に、フロントへ公開しない名前で設定します。
+
+```text
+GEMINI_API_KEY=your_google_ai_studio_api_key
+```
+
+`VITE_GEMINI_API_KEY` は使用しません。Gemini APIキーは Pages Functions の `/api/recipes` だけで読み込みます。
+
+## デプロイ予定
+
+- Custom domain: `recipes.eatease.net`
+- 保存: 当面は `localStorage`
+- API: Cloudflare Pages Functions

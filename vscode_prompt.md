@@ -52,14 +52,14 @@ fridge-recipe-ai/
 
 ---
 
-## .env ファイル（ユーザーが手動で作成）
+## Cloudflare Pages 環境変数（ユーザーが手動で作成）
 
 ```env
-VITE_GEMINI_API_KEY=あなたのAPIキーをここに貼り付け
+GEMINI_API_KEY=あなたのAPIキーをここに貼り付け
 ```
 
-※ Viteでは環境変数のプレフィックスは `VITE_` が必須。
-※ `.gitignore` に `.env` を必ず含めること。
+※ フロントにはAPIキーを置かない。
+※ Cloudflare Pages Functions の `/api/recipes` だけが `GEMINI_API_KEY` を参照する。
 
 ---
 
@@ -70,7 +70,7 @@ VITE_GEMINI_API_KEY=あなたのAPIキーをここに貼り付け
 Gemini 1.5 Flash APIとの通信を担当するモジュール。
 
 - APIエンドポイント：`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`
-- APIキーは `import.meta.env.VITE_GEMINI_API_KEY` から取得
+- APIキーはCloudflare Pages Functions側の `env.GEMINI_API_KEY` から取得
 - テキスト入力と画像入力（base64）の両方に対応
 - システムプロンプト：
 
@@ -220,7 +220,7 @@ theme: {
 
 ## 動作確認チェックリスト
 
-- [ ] `.env` の `VITE_GEMINI_API_KEY` が正しく読み込まれる
+- [ ] Cloudflare Pages Functions の `GEMINI_API_KEY` が正しく読み込まれる
 - [ ] テキスト入力からレシピが返ってくる
 - [ ] 画像をアップロードしてレシピが返ってくる
 - [ ] スマホのカメラで撮影してレシピが返ってくる

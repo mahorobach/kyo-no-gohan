@@ -226,17 +226,6 @@ export default function App() {
     setInputSource(source);
     navigate('recipes');
 
-    if (!import.meta.env.VITE_GEMINI_API_KEY) {
-      // APIキー未設定時はモックデータを表示
-      setTimeout(() => {
-        const mockRecipes = makeMockRecipes(ingredients, condition);
-        setRecipes(mockRecipes);
-        rememberRecipes(mockRecipes);
-        setLoading(false);
-      }, 800);
-      return;
-    }
-
     try {
       const result = await fetchRecipes(ingredients.map((i) => i.name), condition);
       setRecipes(result.recipes);
@@ -264,17 +253,6 @@ export default function App() {
     const existingRecipes = recipes ?? [];
     const existingTitles = existingRecipes.map((recipe) => recipe.title).filter(Boolean);
     const mockCondition = condition || `別案${Math.floor(existingRecipes.length / 3) + 1}`;
-
-    if (!import.meta.env.VITE_GEMINI_API_KEY) {
-      setTimeout(() => {
-        const mockRecipes = makeMockRecipes(submittedIngredients, mockCondition);
-        const { merged, added } = mergeUniqueRecipes(existingRecipes, mockRecipes);
-        setRecipes(merged);
-        rememberRecipes(added);
-        setAddingRecipes(false);
-      }, 800);
-      return;
-    }
 
     try {
       const result = await fetchRecipes(
