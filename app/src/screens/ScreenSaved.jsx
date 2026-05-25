@@ -48,6 +48,7 @@ export default function ScreenSaved({
   const handleTab = (tab) => {
     if (tab === 'home') navigate('home');
     if (tab === 'fridge') navigate('camera');
+    if (tab === 'me') navigate('profile');
   };
 
   const handleSelectRecipe = (recipe) => {

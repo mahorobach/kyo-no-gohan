@@ -103,6 +103,7 @@ export default function ScreenHistory({
     if (tab === 'home') navigate('home');
     if (tab === 'fridge') navigate('camera');
     if (tab === 'saved') navigate('saved');
+    if (tab === 'me') navigate('profile');
   };
 
   const handleSelectRecipe = (recipe) => {

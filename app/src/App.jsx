@@ -10,10 +10,12 @@ import ScreenTextInput from './screens/ScreenTextInput';
 import ScreenSaved from './screens/ScreenSaved';
 import ScreenCooking from './screens/ScreenCooking';
 import ScreenHistory from './screens/ScreenHistory';
+import ScreenProfile from './screens/ScreenProfile';
 import { fetchRecipes } from './lib/gemini';
 
 const RECENT_RECIPE_LIMIT = 12;
 const SAVED_RECIPES_STORAGE_KEY = 'kyou-no-gohan:saved-recipes';
+const PROFILE_STORAGE_KEY = 'kyou-no-gohan:profile';
 
 const normalizeTitle = (title = '') => title.replace(/\s+/g, '').trim();
 
@@ -50,6 +52,21 @@ const loadSavedRecipes = () => {
   } catch (error) {
     console.error('レシピ帳の読み込みに失敗しました', error);
     return [];
+  }
+};
+
+const loadProfile = () => {
+  try {
+    const profileText = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!profileText) return { name: 'さくらこ' };
+
+    const parsed = JSON.parse(profileText);
+    return {
+      name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : 'さくらこ',
+    };
+  } catch (error) {
+    console.error('プロフィールの読み込みに失敗しました', error);
+    return { name: 'さくらこ' };
   }
 };
 
@@ -147,6 +164,7 @@ const SCREENS = {
   saved: ScreenSaved,
   cooking: ScreenCooking,
   history: ScreenHistory,
+  profile: ScreenProfile,
 };
 
 export default function App() {
@@ -160,6 +178,7 @@ export default function App() {
   const [completedRecipe, setCompletedRecipe] = useState(null);
   const [recentRecipes, setRecentRecipes] = useState([]);
   const [savedRecipes, setSavedRecipes] = useState(loadSavedRecipes);
+  const [profile, setProfile] = useState(loadProfile);
   const [detectedIngredients, setDetectedIngredients] = useState([]);
   const [photoCount, setPhotoCount] = useState(0);
   const [addingRecipes, setAddingRecipes] = useState(false);
@@ -174,6 +193,14 @@ export default function App() {
       console.error('レシピ帳の保存に失敗しました', error);
     }
   }, [savedRecipes]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    } catch (error) {
+      console.error('プロフィールの保存に失敗しました', error);
+    }
+  }, [profile]);
 
   const rememberRecipes = (nextRecipes) => {
     setRecentRecipes((current) => {
@@ -209,6 +236,10 @@ export default function App() {
 
   const handleChangeDetectedIngredients = (nextIngredients) => {
     setDetectedIngredients(nextIngredients);
+  };
+
+  const handleUpdateProfile = (nextProfile) => {
+    setProfile((current) => ({ ...current, ...nextProfile }));
   };
 
   const handleGenerateRecipes = async (ingredients, source = 'text', condition = '') => {
@@ -352,6 +383,7 @@ export default function App() {
           addError={addError}
           selectedRecipe={selectedRecipe}
           completedRecipe={completedRecipe}
+          profile={profile}
           recentRecipes={recentRecipes}
           savedRecipes={savedRecipes}
           detectedIngredients={detectedIngredients}
@@ -363,6 +395,7 @@ export default function App() {
           onAddRecipes={handleAddRecipes}
           onAnalyzePhoto={handleAnalyzePhoto}
           onChangeDetectedIngredients={handleChangeDetectedIngredients}
+          onUpdateProfile={handleUpdateProfile}
           onSelectRecipe={handleSelectRecipe}
           onCompleteRecipe={handleCompleteRecipe}
         />

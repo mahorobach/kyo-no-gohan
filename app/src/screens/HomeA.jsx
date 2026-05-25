@@ -258,6 +258,7 @@ export default function HomeA({
   const handleTab = (tab) => {
     if (tab === 'saved') navigate('saved');
     if (tab === 'fridge') navigate('camera');
+    if (tab === 'me') navigate('profile');
   };
 
   return (
