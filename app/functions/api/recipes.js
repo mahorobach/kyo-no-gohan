@@ -1,4 +1,4 @@
-const API_MODEL = 'gemini-3.5-flash';
+const API_MODEL = 'gemini-3.1-flash-lite';
 
 const SYSTEM_PROMPT = `あなたは日本の家庭料理に精通したプロシェフです。
 ユーザーから食材リストが与えられます。以下の条件で3つのレシピを考えてください。
