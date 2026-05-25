@@ -76,6 +76,14 @@ export async function onRequestPost({ request, env }) {
     if (!apiKey) {
       return jsonResponse({ error: 'GEMINI_API_KEY is not configured' }, 500);
     }
+    if (requestUrl.searchParams.get('debug') === 'key') {
+      return jsonResponse({
+        ok: true,
+        length: apiKey.length,
+        asciiOnly: /^[\x20-\x7E]+$/.test(apiKey),
+        startsWithAi: apiKey.startsWith('AI'),
+      });
+    }
     if (requestUrl.searchParams.get('debug') === 'gemini') {
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent`;
       const res = await fetch(apiUrl, {
