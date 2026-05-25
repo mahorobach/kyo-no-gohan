@@ -120,6 +120,8 @@ const normalizeConditions = (conditions = []) => {
 
 const getConditionLabel = (conditions = []) => normalizeConditions(conditions).join('・');
 
+const limitGeneratedRecipes = (recipes = []) => recipes.slice(0, 2);
+
 const makeMockRecipes = (ingredients, conditions = []) => {
   const selectedConditions = normalizeConditions(conditions);
   const names = ingredients.map((i) => i.name);
@@ -315,8 +317,9 @@ export default function App() {
 
     try {
       const result = await fetchRecipes(ingredients.map((i) => i.name), selectedConditions);
-      setRecipes(result.recipes);
-      rememberRecipes(result.recipes);
+      const generatedRecipes = limitGeneratedRecipes(result.recipes);
+      setRecipes(generatedRecipes);
+      rememberRecipes(generatedRecipes);
     } catch (apiError) {
       const mockRecipes = makeMockRecipes(ingredients, selectedConditions);
       setRecipes(mockRecipes);
@@ -350,7 +353,7 @@ export default function App() {
         selectedConditions,
         existingTitles,
       );
-      const { merged, added } = mergeUniqueRecipes(existingRecipes, result.recipes);
+      const { merged, added } = mergeUniqueRecipes(existingRecipes, limitGeneratedRecipes(result.recipes));
       setRecipes(merged);
       rememberRecipes(added);
       if (!added.length) {
