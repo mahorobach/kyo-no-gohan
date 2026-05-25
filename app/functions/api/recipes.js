@@ -103,7 +103,7 @@ export async function onRequestPost({ request, env }) {
         status: res.status,
         contentType: res.headers.get('content-type'),
         bodyStart: text.slice(0, 500),
-      }, res.ok ? 200 : 502);
+      });
     }
 
     let payload;
@@ -148,7 +148,7 @@ export async function onRequestPost({ request, env }) {
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
       const msg = errBody?.error?.message ?? res.status;
-      return jsonResponse({ error: `Gemini API error: ${msg}` }, 502);
+      return jsonResponse({ error: `Gemini API error: ${msg}` }, 500);
     }
 
     const data = await res.json();
