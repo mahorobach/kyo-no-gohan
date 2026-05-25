@@ -62,36 +62,41 @@ const parseRecipes = (text) => {
 };
 
 export async function onRequestPost({ request, env }) {
-  if (!env.GEMINI_API_KEY) {
-    return jsonResponse({ error: 'GEMINI_API_KEY is not configured' }, 500);
-  }
-
-  let payload;
   try {
-    payload = await request.json();
-  } catch {
-    return jsonResponse({ error: 'Invalid JSON body' }, 400);
-  }
+    const requestUrl = new URL(request.url);
+    if (requestUrl.searchParams.get('debug') === '1') {
+      return jsonResponse({ ok: true, model: API_MODEL, hasApiKey: Boolean(env.GEMINI_API_KEY) });
+    }
 
-  const ingredientNames = Array.isArray(payload.ingredientNames)
-    ? payload.ingredientNames.map((name) => String(name).trim()).filter(Boolean)
-    : [];
-  const condition = typeof payload.condition === 'string' ? payload.condition.trim() : '';
-  const avoidTitles = Array.isArray(payload.avoidTitles)
-    ? payload.avoidTitles.map((title) => String(title).trim()).filter(Boolean)
-    : [];
+    if (!env.GEMINI_API_KEY) {
+      return jsonResponse({ error: 'GEMINI_API_KEY is not configured' }, 500);
+    }
 
-  if (!ingredientNames.length) {
-    return jsonResponse({ error: '食材を1つ以上入力してください' }, 400);
-  }
+    let payload;
+    try {
+      payload = await request.json();
+    } catch {
+      return jsonResponse({ error: 'Invalid JSON body' }, 400);
+    }
 
-  const conditionText = condition ? `\n追加条件: ${condition}を優先してください。` : '';
-  const avoidTitleText = avoidTitles.length
-    ? `\n既存の料理名: ${avoidTitles.join('、')}\n上記と同じ、またはほぼ同じ料理名は避けてください。`
-    : '';
-  const userMessage = `以下の食材でレシピを3つ提案してください：${ingredientNames.join('、')}${conditionText}${avoidTitleText}`;
+    const ingredientNames = Array.isArray(payload.ingredientNames)
+      ? payload.ingredientNames.map((name) => String(name).trim()).filter(Boolean)
+      : [];
+    const condition = typeof payload.condition === 'string' ? payload.condition.trim() : '';
+    const avoidTitles = Array.isArray(payload.avoidTitles)
+      ? payload.avoidTitles.map((title) => String(title).trim()).filter(Boolean)
+      : [];
 
-  try {
+    if (!ingredientNames.length) {
+      return jsonResponse({ error: '食材を1つ以上入力してください' }, 400);
+    }
+
+    const conditionText = condition ? `\n追加条件: ${condition}を優先してください。` : '';
+    const avoidTitleText = avoidTitles.length
+      ? `\n既存の料理名: ${avoidTitles.join('、')}\n上記と同じ、またはほぼ同じ料理名は避けてください。`
+      : '';
+    const userMessage = `以下の食材でレシピを3つ提案してください：${ingredientNames.join('、')}${conditionText}${avoidTitleText}`;
+
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
     const res = await fetch(apiUrl, {
       method: 'POST',
