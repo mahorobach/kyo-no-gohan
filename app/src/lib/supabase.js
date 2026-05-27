@@ -8,4 +8,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase の環境変数が設定されていません');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// SPA での OAuth リダイレクト後にセッションが取れるよう implicit フローを使用
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: 'implicit',
+    detectSessionInUrl: true,
+  },
+});

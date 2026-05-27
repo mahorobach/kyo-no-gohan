@@ -10,15 +10,17 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 既存セッションを確認
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // onAuthStateChange を先に登録してから getSession を呼ぶ
+    // （リダイレクト後の SIGNED_IN イベントを取りこぼさないため）
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? false);
       setLoading(false);
     });
 
-    // ログイン・ログアウトの変化を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 既存セッションを確認（リスナー登録後に呼ぶ）
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? false);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
