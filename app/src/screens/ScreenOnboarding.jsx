@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { T, FONT } from '../tokens';
 import Paper from '../components/Paper';
 import Logo from '../components/Logo';
@@ -5,6 +6,7 @@ import Eyebrow from '../components/Eyebrow';
 import Btn from '../components/Btn';
 import Veggie from '../components/Veggie';
 import HandUnderline from '../components/HandUnderline';
+import { useAuth } from '../contexts/AuthContext';
 
 function Dotz({ on }) {
   return (
@@ -16,6 +18,18 @@ function Dotz({ on }) {
 }
 
 export default function ScreenOnboarding({ navigate }) {
+  const { signInWithGoogle } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      await signInWithGoogle();
+    } catch {
+      setLoading(false);
+    }
+  };
+
   return (
     <Paper color={T.bg} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       {/* 上部デコレーション */}
@@ -100,12 +114,25 @@ export default function ScreenOnboarding({ navigate }) {
 
         {/* CTA */}
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Btn kind="accent" full onClick={() => navigate('home')}>はじめる</Btn>
-          <div style={{
-            textAlign: 'center', fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
-          }}>
+          <Btn kind="accent" full onClick={handleLogin} disabled={loading}>
+            {loading ? 'ログイン中…' : 'はじめる'}
+          </Btn>
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            style={{
+              textAlign: 'center',
+              fontFamily: FONT.sans,
+              fontSize: 12,
+              color: T.inkMuted,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px 0',
+            }}
+          >
             すでに登録ずみ <span style={{ color: T.ink, fontWeight: 600 }}>ログイン</span>
-          </div>
+          </button>
         </div>
       </div>
     </Paper>

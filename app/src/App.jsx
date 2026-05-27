@@ -11,7 +11,6 @@ import ScreenSaved from './screens/ScreenSaved';
 import ScreenCooking from './screens/ScreenCooking';
 import ScreenHistory from './screens/ScreenHistory';
 import ScreenProfile from './screens/ScreenProfile';
-import ScreenLogin from './screens/ScreenLogin';
 import { analyzeIngredientPhotos, fetchRecipes } from './lib/gemini';
 import { recipePatterns } from './data/recipePatterns';
 import { useAuth } from './contexts/AuthContext';
@@ -709,10 +708,10 @@ export default function App() {
         </div>
       )}
 
-      {/* 未ログイン → ログイン画面 */}
+      {/* 未ログイン → オンボーディング画面 */}
       {!authLoading && !user && (
         <div style={phoneShell}>
-          <ScreenLogin />
+          <ScreenOnboarding />
         </div>
       )}
 
