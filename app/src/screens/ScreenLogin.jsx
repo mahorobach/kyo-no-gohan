@@ -1,7 +1,7 @@
 // ログイン画面
 import { useState } from 'react';
 import { T, FONT } from '../tokens';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '../contexts/useAuth';
 
 export default function ScreenLogin() {
   const { signInWithGoogle } = useAuth();
@@ -13,7 +13,7 @@ export default function ScreenLogin() {
       setLoading(true);
       setError(null);
       await signInWithGoogle();
-    } catch (err) {
+    } catch {
       setError('ログインに失敗しました。もう一度お試しください。');
       setLoading(false);
     }

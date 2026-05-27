@@ -13,7 +13,7 @@ import ScreenHistory from './screens/ScreenHistory';
 import ScreenProfile from './screens/ScreenProfile';
 import { analyzeIngredientPhotos, fetchRecipes } from './lib/gemini';
 import { recipePatterns } from './data/recipePatterns';
-import { useAuth } from './contexts/AuthContext';
+import useAuth from './contexts/useAuth';
 import { T, FONT } from './tokens';
 
 const RECENT_GENERATION_LIMIT = 12;
@@ -655,7 +655,8 @@ export default function App() {
     navigate('home');
   };
 
-  const CurrentScreen = SCREENS[screen] || SCREENS.home;
+  const effectiveScreen = (!authLoading && user && screen === 'onboarding') ? 'home' : screen;
+  const CurrentScreen = SCREENS[effectiveScreen] || SCREENS.home;
 
   // Supabase ユーザー情報をプロフィールにマージ
   const displayProfile = {

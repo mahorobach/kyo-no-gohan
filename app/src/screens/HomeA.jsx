@@ -5,7 +5,6 @@ import Tag from '../components/Tag';
 import YenStamp from '../components/YenStamp';
 import Btn from '../components/Btn';
 import TabBar from '../components/TabBar';
-import { getDishImage } from '../lib/dishImage';
 
 const isSameDate = (dateText, base = new Date()) => {
   if (!dateText) return false;

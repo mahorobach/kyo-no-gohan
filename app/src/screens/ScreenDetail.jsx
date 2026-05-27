@@ -6,7 +6,6 @@ import Veggie from '../components/Veggie';
 import HandUnderline from '../components/HandUnderline';
 import SectionHeader from '../components/SectionHeader';
 import { recipePatterns } from '../data/recipePatterns';
-import { getDishImage } from '../lib/dishImage';
 
 const DEFAULT_RECIPE = {
   title: '豚バラと玉ねぎの\n香ばし生姜焼き',
@@ -57,7 +56,6 @@ export default function ScreenDetail({
   const steps = recipe.steps?.length ? recipe.steps : DEFAULT_RECIPE.steps;
   const missing = ingredients.find((it) => it.have === false);
   const imageUrl = recipe.imageUrl ?? null;
-  const dishImage = getDishImage(recipe);
 
   const normalizeRecipeName = (s = '') => s.replace(/\s+/g, '').trim();
   const matchedPattern = recipePatterns.find(

@@ -6,7 +6,7 @@ import Eyebrow from '../components/Eyebrow';
 import Btn from '../components/Btn';
 import Veggie from '../components/Veggie';
 import HandUnderline from '../components/HandUnderline';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '../contexts/useAuth';
 
 function Dotz({ on }) {
   return (
@@ -17,7 +17,7 @@ function Dotz({ on }) {
   );
 }
 
-export default function ScreenOnboarding({ navigate }) {
+export default function ScreenOnboarding() {
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 

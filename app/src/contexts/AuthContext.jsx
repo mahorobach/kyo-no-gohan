@@ -1,8 +1,7 @@
 // 認証状態をアプリ全体で共有するコンテキスト
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-
-const AuthContext = createContext(null);
+import AuthContext from './AuthContext';
 
 export function AuthProvider({ children }) {
   // null = 読み込み中, false = 未ログイン, object = ログイン済み
@@ -49,10 +48,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
-// 認証情報を取得するカスタムフック
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth は AuthProvider の中で使ってください');
-  return ctx;
-};
