@@ -92,7 +92,7 @@ export default function ScreenDetail({
         background: `linear-gradient(135deg, ${T.amberTint} 0%, ${T.terracottaTint} 100%)`,
         backgroundImage: `${PAPER_NOISE}, repeating-linear-gradient(45deg, ${T.amberTint} 0 14px, ${T.amberTint} 14px 28px)`,
       }}>
-        {imageUrl ? (
+        {imageUrl && (
           <img
             src={imageUrl}
             alt={title.replace(/\n/g, '')}
@@ -100,19 +100,6 @@ export default function ScreenDetail({
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',
               objectFit: 'cover',
-            }}
-          />
-        ) : (
-          <img
-            src={dishImage}
-            alt=""
-            style={{
-              position: 'absolute',
-              right: 24, bottom: 24,
-              width: 140, height: 140,
-              objectFit: 'contain',
-              opacity: 0.88,
-              filter: 'drop-shadow(0 4px 12px rgba(42,31,20,0.18))',
             }}
           />
         )}
