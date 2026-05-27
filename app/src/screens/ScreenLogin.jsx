@@ -47,22 +47,46 @@ export default function ScreenLogin() {
           🥢
         </div>
         <div style={{
-          fontFamily: FONT.serif,
-          fontSize: 28,
-          fontWeight: 600,
-          color: T.ink,
-          letterSpacing: '0.04em',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
         }}>
-          きょうのごはん
+          <div style={{
+            fontFamily: FONT.serif,
+            fontSize: 28,
+            fontWeight: 600,
+            color: T.ink,
+            letterSpacing: '0.04em',
+          }}>
+            きょうのごはん
+          </div>
+          {/* ヘルシーバッジ */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            background: T.sageTint,
+            color: T.sageDeep,
+            borderRadius: 999,
+            padding: '3px 10px',
+            fontFamily: FONT.sans,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            border: `1px solid ${T.sage}44`,
+          }}>
+            🌿 Healthy
+          </div>
         </div>
         <div style={{
           fontFamily: FONT.sans,
           fontSize: 13,
           color: T.inkMuted,
-          marginTop: 8,
-          lineHeight: 1.6,
+          marginTop: 10,
+          lineHeight: 1.7,
         }}>
-          オリエンタルベジタリアン料理の献立帳
+          冷蔵庫から、からだにやさしい一皿を。
         </div>
       </div>
 
