@@ -133,7 +133,13 @@ export default function ScreenOnboarding() {
         await signInWithEmail(email.trim(), password);
       }
     } catch (err) {
-      setError(toJapaneseError(err?.message));
+      // 登録済みメールで新規登録しようとした場合 → ログインタブに切り替え
+      if (err?.message === 'User already registered') {
+        setIsSignup(false);
+        setError('このメールアドレスはすでに登録されています。\nパスワードを入力してログインしてください。');
+      } else {
+        setError(toJapaneseError(err?.message));
+      }
       setLoading(false);
     }
   };
@@ -419,7 +425,7 @@ export default function ScreenOnboarding() {
                 marginTop: 10, padding: '10px 14px', borderRadius: 10,
                 background: T.terracottaTint,
                 fontFamily: FONT.sans, fontSize: 12, color: T.terracottaDeep,
-                lineHeight: 1.6,
+                lineHeight: 1.6, whiteSpace: 'pre-line',
               }}>
                 {error}
               </div>
