@@ -127,8 +127,11 @@ export default function ScreenOnboarding() {
       setLoading(true);
       setError(null);
       if (isSignup) {
-        await signUpWithEmail(email.trim(), password);
-        setSignupDone(true);
+        const data = await signUpWithEmail(email.trim(), password);
+        // メール確認が有効な場合だけ確認メール案内を表示する
+        if (!data.session) {
+          setSignupDone(true);
+        }
       } else {
         await signInWithEmail(email.trim(), password);
       }
@@ -145,7 +148,7 @@ export default function ScreenOnboarding() {
   };
 
   const goToChoice = () => { setMode('choice'); setError(null); };
-  const goToEmail  = () => { setMode('email');  setError(null); };
+  const goToEmail  = () => { setIsSignup(true); setMode('email'); setError(null); };
   const goBack     = () => { setMode((m) => m === 'email' ? 'choice' : 'default'); setError(null); };
 
   const handleResend = async () => {
