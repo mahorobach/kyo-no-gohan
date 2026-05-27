@@ -11,6 +11,18 @@ npm run dev
 
 ローカルのViteだけで起動した場合、`/api/recipes` は存在しないため、Gemini API呼び出しは失敗してモック提案にフォールバックします。
 
+## Android / iPhone アプリ化
+
+Capacitor で `android/` と `ios/` のネイティブプロジェクトを生成しています。
+
+```bash
+npm run cap:sync
+npm run cap:android
+npm run cap:ios
+```
+
+`cap:sync` は Web アプリをビルドして、Android/iOS 側へ反映します。`cap:android` は Android Studio、`cap:ios` は Xcode を開きます。
+
 ## Cloudflare Pages
 
 - Framework preset: `Vite`

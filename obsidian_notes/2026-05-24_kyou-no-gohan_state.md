@@ -45,6 +45,11 @@
   - セット内に2レシピ
 - マイページで無料/有料プランを仮切り替え
 - Gemini API失敗時はモックデータで続行
+- CapacitorでAndroid/iOSアプリ化の土台を作成
+  - `android/` と `ios/` のネイティブプロジェクトを生成
+  - `npm run cap:sync` でWebビルドをネイティブ側へ同期
+  - `npm run cap:android` でAndroid Studioを開く
+  - `npm run cap:ios` でXcodeを開く
 
 ## 現在OFFにしていること
 
@@ -210,7 +215,75 @@ npm run lint
 
 どちらも成功。
 
+Capacitor確認:
+
+```bash
+npm run cap:sync
+```
+
+成功。
+
 2026-05-25 追加確認:
 
 - ローカル画面で生成回数が `0/3 -> 1/3 -> 3/3` と増えることを確認
 - 上限到達後に追加生成ボタンが無効になることを確認
+
+## 開発環境メモ
+
+### Node / npm
+
+- M1 Macでも、ターミナルやNodeがRosetta経由だと `darwin x64` として動く。
+- `node_modules` はNodeのCPU種別に合わせて作り直す必要がある。
+- 確認コマンド:
+
+```bash
+uname -m
+which node
+node -p "process.platform + ' ' + process.arch"
+```
+
+- `arm64` と `x64` を行き来した場合の復旧:
+
+```bash
+cd /Users/akaohiroshi/Documents/Cursor/Recipes/app
+rm -rf node_modules
+npm ci --include=optional
+```
+
+### Capacitor iOS / Xcode停止問題
+
+2026-05-27時点で、Xcode 26.5 / macOS 26.5 環境にて、XcodeでiOS Simulator向けにRunすると `Building | Pre-planning` 付近で停止する症状が出た。
+
+確認したこと:
+
+- `xcrun simctl list devices available` でSimulator一覧は取得できた。
+- 一時的に以下のエラーが出ていた。
+  - `CoreSimulatorService connection became invalid`
+  - `simdiskimaged crashed or is not responding`
+- `xcodebuild -resolvePackageDependencies -project ios/App/App.xcodeproj -scheme App` は成功。
+- `xcodebuild build` はSimulator向け・実機向けの両方で停止。
+- 停止箇所は `clang -v -E -dM -isysroot ... iPhoneSimulator26.5.sdk ... /dev/null` 付近。
+- `clang` 単体実行は成功したため、SDKファイル自体の完全破損ではなく、Xcode build service / CoreSimulator / ibtoold / キャッシュ周辺の詰まりと判断。
+
+復旧手順:
+
+```bash
+killall Xcode
+killall Simulator
+killall ibtoold
+killall CoreSimulatorService
+rm -rf ~/Library/Developer/Xcode/DerivedData
+```
+
+その後、Macを再起動、またはXcodeを開き直す。
+
+```bash
+cd /Users/akaohiroshi/Documents/Cursor/Recipes/app
+npm run cap:sync
+npm run cap:ios
+```
+
+結果:
+
+- 上記対応後、Xcodeでビルド/起動できた。
+- 原因はアプリコードではなく、Xcode / Simulator / ビルドサービス側の詰まりだった可能性が高い。
