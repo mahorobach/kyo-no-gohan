@@ -6,6 +6,7 @@ import Tag from '../components/Tag';
 import YenStamp from '../components/YenStamp';
 import Veggie from '../components/Veggie';
 import NavBack from '../components/NavBack';
+import { getDishImage } from '../lib/dishImage';
 
 const RECIPES = [
   {
@@ -70,11 +71,11 @@ function RecipeCard({ r, idx, featured, onPress }) {
         : '0 8px 18px -14px rgba(42,31,20,0.25)',
       cursor: 'pointer',
     }}>
-      {/* 画像なしの一覧ヘッダー */}
+      {/* カードヘッダー */}
       <div style={{
-        minHeight: 72, position: 'relative',
+        minHeight: 80, position: 'relative',
         background: r.stripe ?? T.bgWarm,
-        padding: '16px 18px',
+        padding: '14px 18px',
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         {/* 番号スタンプ */}
@@ -86,10 +87,31 @@ function RecipeCard({ r, idx, featured, onPress }) {
           boxShadow: '0 6px 14px -6px rgba(0,0,0,0.4)',
           flexShrink: 0,
         }}>{idx}</div>
-        {/* おすすめバッジ */}
+        {/* タイトル */}
+        <div style={{
+          flex: 1,
+          fontFamily: FONT.serif, fontSize: 17, fontWeight: 600, color: T.ink,
+          lineHeight: 1.35,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          minWidth: 0,
+        }}>{r.title}</div>
+        {/* 料理イラスト */}
+        <img
+          src={getDishImage(r)}
+          alt=""
+          style={{
+            width: 68, height: 68,
+            objectFit: 'contain',
+            flexShrink: 0,
+            opacity: 0.92,
+          }}
+        />
+        {/* おすすめバッジ（イラストの上に重ねる） */}
         {r.tag && (
           <div style={{
-            position: 'absolute', top: 16, right: 14,
+            position: 'absolute', top: 12, right: 12,
             transform: 'rotate(6deg)',
             background: T.terracotta, color: T.surface,
             fontFamily: FONT.serif, fontSize: 12, fontWeight: 600,
@@ -100,15 +122,6 @@ function RecipeCard({ r, idx, featured, onPress }) {
             ＼ {r.tag} ／
           </div>
         )}
-        <div style={{
-          fontFamily: FONT.serif, fontSize: 17, fontWeight: 600, color: T.ink,
-          lineHeight: 1.35,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          paddingRight: r.tag ? 78 : 0,
-          minWidth: 0,
-        }}>{r.title}</div>
       </div>
 
       {/* カードボディ */}
