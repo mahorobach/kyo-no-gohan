@@ -46,7 +46,17 @@ export function AuthProvider({ children }) {
   const signUpWithEmail = async (email, password) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
+    // identities が空配列 = すでに登録済みのメールアドレス（Supabase の仕様）
+    if (data.user?.identities?.length === 0) {
+      throw new Error('User already registered');
+    }
     return data;
+  };
+
+  // 確認メールを再送する
+  const resendConfirmationEmail = async (email) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) throw error;
   };
 
   // ログアウト
@@ -56,7 +66,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmationEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );

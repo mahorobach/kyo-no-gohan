@@ -98,7 +98,7 @@ function TopDecoration() {
 }
 
 export default function ScreenOnboarding() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmationEmail } = useAuth();
   // モード: 'default' | 'choice' | 'email'
   const [mode, setMode] = useState('default');
   const [loading, setLoading] = useState(false);
@@ -107,6 +107,7 @@ export default function ScreenOnboarding() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [signupDone, setSignupDone] = useState(false);
+  const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
 
   const handleGoogleLogin = async () => {
     try {
@@ -141,6 +142,16 @@ export default function ScreenOnboarding() {
   const goToEmail  = () => { setMode('email');  setError(null); };
   const goBack     = () => { setMode((m) => m === 'email' ? 'choice' : 'default'); setError(null); };
 
+  const handleResend = async () => {
+    try {
+      setResendStatus('sending');
+      await resendConfirmationEmail(email);
+      setResendStatus('sent');
+    } catch {
+      setResendStatus('error');
+    }
+  };
+
   // 登録完了（確認メール送信済み）画面
   if (signupDone) {
     return (
@@ -164,11 +175,28 @@ export default function ScreenOnboarding() {
           お送りしました。<br />
           メール内のリンクをクリックして<br />登録を完了してください。
         </div>
+        {/* 再送ボタン */}
         <button
-          onClick={() => { setSignupDone(false); setIsSignup(false); setMode('email'); }}
+          onClick={handleResend}
+          disabled={resendStatus === 'sending' || resendStatus === 'sent'}
           style={{
-            fontFamily: FONT.sans, fontSize: 13, color: T.terracotta,
-            background: 'none', border: 'none', cursor: 'pointer', marginTop: 8,
+            fontFamily: FONT.sans, fontSize: 13,
+            color: resendStatus === 'sent' ? T.sage : T.inkMuted,
+            background: 'none', border: 'none', cursor: resendStatus === 'sent' ? 'default' : 'pointer',
+            marginTop: 4,
+          }}
+        >
+          {resendStatus === 'sending' && '送信中…'}
+          {resendStatus === 'sent' && 'メールを再送しました'}
+          {resendStatus === 'error' && '再送に失敗しました。時間をおいて試してください'}
+          {!resendStatus && 'メールが届かない場合はここをタップ'}
+        </button>
+
+        <button
+          onClick={() => { setSignupDone(false); setIsSignup(false); setMode('email'); setResendStatus(null); }}
+          style={{
+            fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
+            background: 'none', border: 'none', cursor: 'pointer', marginTop: 4,
           }}
         >
           ログイン画面へ戻る
