@@ -6,8 +6,19 @@ import TabBar from '../components/TabBar';
 
 const toneByIndex = ['amber', 'sage', 'terracotta'];
 
-function HistoryCard({ recipe, index, onClick }) {
-  const tone = recipe.tone ?? toneByIndex[index % toneByIndex.length];
+function formatGenerationTime(dateText) {
+  const date = new Date(dateText);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function HistoryCard({ generation, index, onClick }) {
+  const recipes = generation.recipes ?? [];
+  const tone = toneByIndex[index % toneByIndex.length];
+  const title = recipes.map((recipe) => recipe.title).filter(Boolean).join(' / ');
+  const ingredientNames = (generation.ingredients ?? []).map((item) => item.name).join('、');
+  const conditionLabel = (generation.conditions ?? ['おまかせ']).join('・');
 
   return (
     <div
@@ -53,9 +64,9 @@ function HistoryCard({ recipe, index, onClick }) {
             lineHeight: 1.4,
             whiteSpace: 'pre-line',
           }}>
-            {recipe.title}
+            {title || '生成した献立'}
           </div>
-          {recipe.description && (
+          {ingredientNames && (
             <div style={{
               fontFamily: FONT.sans,
               fontSize: 12,
@@ -67,7 +78,7 @@ function HistoryCard({ recipe, index, onClick }) {
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}>
-              {recipe.description}
+              {ingredientNames}
             </div>
           )}
         </div>
@@ -82,13 +93,13 @@ function HistoryCard({ recipe, index, onClick }) {
         borderTop: `1px dotted ${T.line}`,
       }}>
         <span style={{ fontFamily: FONT.mono, fontSize: 12, color: T.terracottaDeep }}>
-          {recipe.time ?? '--'}分
+          {formatGenerationTime(generation.createdAt)}
         </span>
         <span style={{ width: 3, height: 3, borderRadius: 2, background: T.line }} />
         <span style={{ fontFamily: FONT.sans, fontSize: 11, color: T.inkMuted }}>
-          {recipe.kcal ?? '--'}kcal
+          {recipes.length}品
         </span>
-        <Tag tone={tone} style={{ marginLeft: 'auto' }}>{recipe.diff ?? 'レシピ'}</Tag>
+        <Tag tone={tone} style={{ marginLeft: 'auto' }}>{conditionLabel}</Tag>
       </div>
     </div>
   );
@@ -96,8 +107,8 @@ function HistoryCard({ recipe, index, onClick }) {
 
 export default function ScreenHistory({
   navigate,
-  recentRecipes = [],
-  onSelectRecipe,
+  recentGenerations = [],
+  onSelectGeneration,
 }) {
   const handleTab = (tab) => {
     if (tab === 'home') navigate('home');
@@ -106,11 +117,11 @@ export default function ScreenHistory({
     if (tab === 'me') navigate('profile');
   };
 
-  const handleSelectRecipe = (recipe) => {
-    if (onSelectRecipe) {
-      onSelectRecipe(recipe);
+  const handleSelectGeneration = (generation) => {
+    if (onSelectGeneration) {
+      onSelectGeneration(generation);
     } else {
-      navigate('detail');
+      navigate('recipes');
     }
   };
 
@@ -144,7 +155,7 @@ export default function ScreenHistory({
           fontSize: 12,
           fontWeight: 700,
         }}>
-          {recentRecipes.length}
+          {recentGenerations.length}
         </div>
       </div>
 
@@ -166,7 +177,7 @@ export default function ScreenHistory({
           lineHeight: 1.6,
           marginTop: 8,
         }}>
-          最近生成したレシピを新しい順に表示しています
+          1回の生成で出た2品を、セットごとに新しい順で表示しています
         </div>
       </div>
 
@@ -178,13 +189,13 @@ export default function ScreenHistory({
         overflowY: 'auto',
         maxHeight: 'calc(100% - 190px)',
       }}>
-        {recentRecipes.length > 0 ? (
-          recentRecipes.map((recipe, index) => (
+        {recentGenerations.length > 0 ? (
+          recentGenerations.map((generation, index) => (
             <HistoryCard
-              key={`${recipe.title}-${recipe.description ?? ''}`}
-              recipe={recipe}
+              key={generation.id}
+              generation={generation}
               index={index}
-              onClick={() => handleSelectRecipe(recipe)}
+              onClick={() => handleSelectGeneration(generation)}
             />
           ))
         ) : (

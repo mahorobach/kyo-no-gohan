@@ -1,4 +1,5 @@
 import { T, FONT } from '../tokens';
+import { useState } from 'react';
 import Paper from '../components/Paper';
 import Btn from '../components/Btn';
 import Tag from '../components/Tag';
@@ -41,6 +42,7 @@ const RECIPES = [
 ].slice(0, 2);
 
 const CONDITIONS = ['おまかせ', '時短', '節約', 'がっつり', 'やさしい味', '汁物', 'お弁当'];
+const MAX_SELECTED_CONDITIONS = 2;
 
 function Meta({ value, unit, yen }) {
   if (yen) return <YenStamp value={yen} />;
@@ -162,6 +164,31 @@ function RecipeCard({ r, idx, featured, onPress }) {
             <Tag tone="sage" style={{ marginLeft: 'auto' }}>ぜんぶ家にある</Tag>
           )}
         </div>
+
+        <div style={{
+          marginTop: 14,
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            minHeight: 34,
+            padding: '0 13px',
+            borderRadius: 17,
+            background: T.ink,
+            color: T.surface,
+            fontFamily: FONT.sans,
+            fontSize: 12,
+            fontWeight: 700,
+          }}>
+            詳しくはこちら
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -177,11 +204,34 @@ export default function ScreenRecipes({
   inputSource,
   generationLabel = 'おまかせ',
   addingRecipes,
+  generationStatus,
   onSelectRecipe,
   onAddRecipes,
 }) {
   const backTo = inputSource === 'text' ? 'textInput' : 'ingredients';
   const visibleRecipes = recipes ?? RECIPES;
+  const reachedLimit = generationStatus && generationStatus.remaining <= 0;
+  const [selectedAddConditions, setSelectedAddConditions] = useState(['おまかせ']);
+
+  const toggleAddCondition = (condition) => {
+    setSelectedAddConditions((current) => {
+      if (condition === 'おまかせ') return ['おまかせ'];
+
+      const withoutDefault = current.filter((item) => item !== 'おまかせ');
+      if (withoutDefault.includes(condition)) {
+        const next = withoutDefault.filter((item) => item !== condition);
+        return next.length ? next : ['おまかせ'];
+      }
+
+      if (withoutDefault.length >= MAX_SELECTED_CONDITIONS) {
+        return [withoutDefault[0], condition];
+      }
+
+      return [...withoutDefault, condition];
+    });
+  };
+
+  const addConditionLabel = selectedAddConditions.join('・');
 
   return (
     <Paper color={T.bg} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
@@ -217,6 +267,18 @@ export default function ScreenRecipes({
         <div style={{ fontFamily: FONT.sans, fontSize: 12, color: T.inkSoft, marginTop: 8, lineHeight: 1.6 }}>
           {ingredients?.length ?? 0}つの食材から、<span style={{ color: T.ink, fontWeight: 600 }}>{generationLabel}</span>でえらびました
         </div>
+        {generationStatus && (
+          <div style={{
+            fontFamily: FONT.sans,
+            fontSize: 11,
+            color: reachedLimit ? T.terracottaDeep : T.inkMuted,
+            marginTop: 6,
+            lineHeight: 1.6,
+          }}>
+            今日の生成 {generationStatus.used} / {generationStatus.limit}回
+            {reachedLimit ? '。追加生成は明日また使えます。' : `。あと${generationStatus.remaining}回追加できます。`}
+          </div>
+        )}
       </div>
 
       {/* レシピカード一覧 */}
@@ -295,33 +357,64 @@ export default function ScreenRecipes({
             fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft,
             fontWeight: 600, textAlign: 'center',
           }}>
-            条件を変えて探す +
+            条件を変えて探す
+          </div>
+          <div style={{
+            fontFamily: FONT.sans,
+            fontSize: 11,
+            color: T.inkMuted,
+            textAlign: 'center',
+            marginTop: 4,
+          }}>
+            1つならその条件で2品、2つなら各条件で1品ずつ追加します
           </div>
           <div style={{
             display: 'flex', flexWrap: 'wrap', gap: 6,
             justifyContent: 'center', marginTop: 10,
           }}>
-            {CONDITIONS.map((condition) => (
-              <button
-                key={condition}
-                onClick={() => onAddRecipes && onAddRecipes(condition)}
-                disabled={addingRecipes || loading}
-                style={{
-                  border: `1px solid ${T.line}`,
-                  background: T.surface,
-                  color: T.ink,
-                  borderRadius: 999,
-                  padding: '7px 11px',
-                  fontFamily: FONT.sans,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: addingRecipes || loading ? 'not-allowed' : 'pointer',
-                  opacity: addingRecipes || loading ? 0.55 : 1,
-                }}
-              >
-                {condition}
-              </button>
-            ))}
+            {CONDITIONS.map((condition) => {
+              const active = selectedAddConditions.includes(condition);
+              return (
+                <button
+                  key={condition}
+                  onClick={() => toggleAddCondition(condition)}
+                  disabled={addingRecipes || loading || reachedLimit}
+                  style={{
+                    border: `1px solid ${active ? T.terracotta : T.line}`,
+                    background: active ? T.terracottaTint : T.surface,
+                    color: active ? T.terracottaDeep : T.ink,
+                    borderRadius: 999,
+                    padding: '7px 11px',
+                    fontFamily: FONT.sans,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: addingRecipes || loading || reachedLimit ? 'not-allowed' : 'pointer',
+                    opacity: addingRecipes || loading || reachedLimit ? 0.55 : 1,
+                  }}
+                >
+                  {condition}
+                </button>
+              );
+            })}
+          </div>
+          <Btn
+            kind="soft"
+            full
+            style={{ height: 42, marginTop: 12, fontSize: 13 }}
+            onClick={() => onAddRecipes && onAddRecipes(selectedAddConditions)}
+            disabled={addingRecipes || loading || reachedLimit}
+          >
+            {addConditionLabel}で2品追加
+          </Btn>
+          <div style={{
+            fontFamily: FONT.sans,
+            fontSize: 10,
+            color: T.inkMuted,
+            textAlign: 'center',
+            marginTop: 7,
+            lineHeight: 1.5,
+          }}>
+            押すと今日の生成回数を1回使います
           </div>
         </div>
       </div>
@@ -347,13 +440,13 @@ export default function ScreenRecipes({
         </div>
         <Btn kind="accent" style={{ flex: 1.4 }}
           onClick={() => onAddRecipes && onAddRecipes()}
-          disabled={addingRecipes || loading}
+          disabled={addingRecipes || loading || reachedLimit}
           icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5" />
             </svg>
           }
-        >もう一度提案</Btn>
+        >{reachedLimit ? '上限です' : 'もう一度提案'}</Btn>
       </div>
     </Paper>
   );

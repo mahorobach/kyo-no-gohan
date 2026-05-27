@@ -12,33 +12,38 @@ import ScreenCooking from './screens/ScreenCooking';
 import ScreenHistory from './screens/ScreenHistory';
 import ScreenProfile from './screens/ScreenProfile';
 import { analyzeIngredientPhotos, fetchRecipes } from './lib/gemini';
+import { recipePatterns } from './data/recipePatterns';
 
-const RECENT_RECIPE_LIMIT = 12;
+const RECENT_GENERATION_LIMIT = 12;
 const SAVED_RECIPES_STORAGE_KEY = 'kyou-no-gohan:saved-recipes';
 const PROFILE_STORAGE_KEY = 'kyou-no-gohan:profile';
+const GENERATIONS_STORAGE_KEY = 'kyou-no-gohan:recent-generations';
+const GENERATION_USAGE_STORAGE_KEY = 'kyou-no-gohan:generation-usage';
+const FREE_DAILY_GENERATION_LIMIT = 3;
+const PAID_DAILY_GENERATION_LIMIT = 10;
 
 const normalizeTitle = (title = '') => title.replace(/\s+/g, '').trim();
 
 const MOCK_PHOTO_BATCHES = [
   [
-    { k: 'onion', name: '玉ねぎ', qty: '2個', conf: 98 },
-    { k: 'pork', name: '豚バラ肉', qty: '約 200g', conf: 95 },
+    { k: 'tofu', name: 'ソイミート', qty: '1袋', conf: 95 },
     { k: 'pepper', name: 'ピーマン', qty: '4個', conf: 91 },
+    { k: 'carrot', name: '人参', qty: '1本', conf: 88 },
   ],
   [
-    { k: 'ginger', name: '生姜', qty: '1かけ', conf: 88 },
-    { k: 'carrot', name: '人参', qty: '1本', conf: 84 },
-    { k: 'egg', name: '卵', qty: '6個', conf: 92, low: true },
+    { k: 'tofu', name: '木綿豆腐', qty: '1丁', conf: 93 },
+    { k: 'cabbage', name: 'キャベツ', qty: '1/4玉', conf: 87 },
+    { k: 'miso', name: '干椎茸', qty: '5枚', conf: 84 },
   ],
   [
-    { k: 'tofu', name: '豆腐', qty: '1丁', conf: 90 },
-    { k: 'sprouts', name: 'もやし', qty: '1袋', conf: 86 },
-    { k: 'miso', name: 'みそ', qty: '少し', conf: 82 },
+    { k: 'cabbage', name: 'キャベツ', qty: '1/2玉', conf: 92 },
+    { k: 'sprouts', name: '緑豆春雨', qty: '30g', conf: 85 },
+    { k: 'ginger', name: '生姜', qty: '2かけ', conf: 82 },
   ],
   [
-    { k: 'tomato', name: 'トマト', qty: '2個', conf: 87 },
-    { k: 'chicken', name: '鶏肉', qty: '約 250g', conf: 85 },
-    { k: 'leek', name: 'ねぎ', qty: '1本', conf: 83 },
+    { k: 'pepper', name: 'なす', qty: '3本', conf: 88 },
+    { k: 'tofu', name: '角麩', qty: '1/2袋', conf: 90 },
+    { k: 'carrot', name: 'ごぼう', qty: '1本', conf: 85 },
   ],
 ];
 
@@ -55,18 +60,64 @@ const loadSavedRecipes = () => {
   }
 };
 
+const getTodayKey = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
+const getGenerationLimit = (profile = {}) => (
+  profile.plan === 'paid' ? PAID_DAILY_GENERATION_LIMIT : FREE_DAILY_GENERATION_LIMIT
+);
+
+const loadRecentGenerations = () => {
+  try {
+    const savedText = window.localStorage.getItem(GENERATIONS_STORAGE_KEY);
+    if (!savedText) return [];
+
+    const parsed = JSON.parse(savedText);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('生成履歴の読み込みに失敗しました', error);
+    return [];
+  }
+};
+
+const loadGenerationUsage = () => {
+  const todayKey = getTodayKey();
+
+  try {
+    const savedText = window.localStorage.getItem(GENERATION_USAGE_STORAGE_KEY);
+    if (!savedText) return { date: todayKey, count: 0 };
+
+    const parsed = JSON.parse(savedText);
+    if (parsed?.date !== todayKey) return { date: todayKey, count: 0 };
+
+    return {
+      date: todayKey,
+      count: Number.isFinite(parsed.count) ? parsed.count : 0,
+    };
+  } catch (error) {
+    console.error('生成回数の読み込みに失敗しました', error);
+    return { date: todayKey, count: 0 };
+  }
+};
+
 const loadProfile = () => {
   try {
     const profileText = window.localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (!profileText) return { name: 'さくらこ' };
+    if (!profileText) return { name: 'さくらこ', plan: 'free' };
 
     const parsed = JSON.parse(profileText);
     return {
       name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : 'さくらこ',
+      plan: parsed.plan === 'paid' ? 'paid' : 'free',
     };
   } catch (error) {
     console.error('プロフィールの読み込みに失敗しました', error);
-    return { name: 'さくらこ' };
+    return { name: 'さくらこ', plan: 'free' };
   }
 };
 
@@ -122,9 +173,91 @@ const getConditionLabel = (conditions = []) => normalizeConditions(conditions).j
 
 const limitGeneratedRecipes = (recipes = []) => recipes.slice(0, 2);
 
+const makeGeneration = ({ recipes, ingredients, conditions }) => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  createdAt: new Date().toISOString(),
+  ingredients: ingredients.map((item) => ({ name: item.name, k: item.k ?? null })),
+  conditions: normalizeConditions(conditions),
+  recipes: limitGeneratedRecipes(recipes),
+});
+
+const makeStepsFromPattern = (pattern) => {
+  const steps = [];
+  if (pattern.tips?.[0]) {
+    steps.push(pattern.tips[0]);
+  } else {
+    const mainNames = (pattern.requiredIngredients ?? []).slice(0, 2).join('、');
+    steps.push(`${mainNames || '材料'}を食べやすい大きさに切り、下準備をする。`);
+  }
+  steps.push(`フライパンまたは鍋に油を熱し、材料を${pattern.method ?? '炒める'}。`);
+  steps.push(`${pattern.flavor ?? '醤油・だし'}で味をととのえる。`);
+  if (pattern.tips?.[1]) {
+    steps.push(pattern.tips[1]);
+  } else {
+    steps.push('全体に火が通ったら器に盛り付けて完成。');
+  }
+  return steps;
+};
+
+const patternToRecipe = (pattern, inputIngredients, category) => {
+  const inputNames = new Set(inputIngredients.map((i) => i.name));
+  const hasAmounts = Object.keys(pattern.amounts ?? {}).length > 0;
+  const ingredients = hasAmounts
+    ? Object.entries(pattern.amounts).map(([name, qty]) => ({
+      name, qty, have: inputNames.has(name),
+    }))
+    : (pattern.requiredIngredients ?? []).map((name) => ({
+      name, qty: '適量', have: inputNames.has(name),
+    }));
+
+  return {
+    title: pattern.name,
+    time: pattern.time,
+    diff: pattern.difficulty,
+    category: category ?? pattern.categories?.[0] ?? 'おまかせ',
+    description: `${pattern.method ?? '炒める'}で作る、${pattern.flavor ?? '和風'}味の一品です。`,
+    ingredients,
+    steps: makeStepsFromPattern(pattern),
+    amounts: pattern.amounts ?? {},
+    servings: pattern.servings,
+    tone: 'amber',
+  };
+};
+
+const nameOverlaps = (inputName, patternName) => (
+  inputName === patternName
+  || inputName.includes(patternName)
+  || patternName.includes(inputName)
+);
+
 const makeMockRecipes = (ingredients, conditions = []) => {
   const selectedConditions = normalizeConditions(conditions);
-  const names = ingredients.map((i) => i.name);
+  const inputNames = ingredients.map((i) => i.name);
+
+  // recipePatterns から入力食材に合うものを探す（amounts入り優先）
+  const scorePattern = (p) => {
+    const overlap = (p.requiredIngredients ?? []).filter((req) =>
+      inputNames.some((n) => nameOverlaps(n, req)),
+    ).length;
+    const hasAmounts = Object.keys(p.amounts ?? {}).length > 0 ? 1 : 0;
+    return overlap * 2 + hasAmounts;
+  };
+
+  const ranked = recipePatterns
+    .map((p) => ({ p, score: scorePattern(p) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (ranked.length >= 2) {
+    const [first, second] = ranked;
+    return [
+      patternToRecipe(first.p, ingredients, selectedConditions[0]),
+      patternToRecipe(second.p, ingredients, selectedConditions[1] ?? selectedConditions[0]),
+    ];
+  }
+
+  // パターンが1件しか見つからない場合は1件だけパターン使用、もう1件は汎用生成
+  const names = inputNames;
   const main = names[0] ?? '野菜';
   const second = names[1] ?? names[0] ?? '食材';
   const third = names[2] ?? second;
@@ -133,7 +266,7 @@ const makeMockRecipes = (ingredients, conditions = []) => {
   const firstPrefix = firstCategory === 'おまかせ' ? '' : `${firstCategory} `;
   const secondPrefix = secondCategory === 'おまかせ' ? '' : `${secondCategory} `;
 
-  return [
+  const genericRecipes = [
     {
       title: `${firstPrefix}${main}と${second}の香ばし炒め`,
       kana: firstCategory,
@@ -172,6 +305,15 @@ const makeMockRecipes = (ingredients, conditions = []) => {
       ],
     },
   ];
+
+  if (ranked.length === 1) {
+    return [
+      patternToRecipe(ranked[0].p, ingredients, selectedConditions[0]),
+      genericRecipes[1],
+    ];
+  }
+
+  return genericRecipes;
 };
 
 const SCREENS = {
@@ -198,9 +340,10 @@ export default function App() {
   const [submittedIngredients, setSubmittedIngredients] = useState([]);
   const [inputSource, setInputSource] = useState('text');
   const [completedRecipe, setCompletedRecipe] = useState(null);
-  const [recentRecipes, setRecentRecipes] = useState([]);
+  const [recentGenerations, setRecentGenerations] = useState(loadRecentGenerations);
   const [savedRecipes, setSavedRecipes] = useState(loadSavedRecipes);
   const [profile, setProfile] = useState(loadProfile);
+  const [generationUsage, setGenerationUsage] = useState(loadGenerationUsage);
   const [detectedIngredients, setDetectedIngredients] = useState([]);
   const [photoCount, setPhotoCount] = useState(0);
   const [photoAnalysisLoading, setPhotoAnalysisLoading] = useState(false);
@@ -227,20 +370,52 @@ export default function App() {
     }
   }, [profile]);
 
-  const rememberRecipes = (nextRecipes) => {
-    setRecentRecipes((current) => {
-      const merged = [...nextRecipes, ...current];
-      const unique = [];
-      const seenTitles = new Set();
-      merged.forEach((recipe) => {
-        const key = normalizeTitle(recipe.title);
-        if (key && !seenTitles.has(key)) {
-          seenTitles.add(key);
-          unique.push(recipe);
-        }
-      });
-      return unique.slice(0, RECENT_RECIPE_LIMIT);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(GENERATIONS_STORAGE_KEY, JSON.stringify(recentGenerations));
+    } catch (error) {
+      console.error('生成履歴の保存に失敗しました', error);
+    }
+  }, [recentGenerations]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(GENERATION_USAGE_STORAGE_KEY, JSON.stringify(generationUsage));
+    } catch (error) {
+      console.error('生成回数の保存に失敗しました', error);
+    }
+  }, [generationUsage]);
+
+  const dailyGenerationLimit = getGenerationLimit(profile);
+  const generationStatus = {
+    plan: profile.plan === 'paid' ? 'paid' : 'free',
+    used: generationUsage.count,
+    limit: dailyGenerationLimit,
+    remaining: Math.max(0, dailyGenerationLimit - generationUsage.count),
+  };
+
+  const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
+    if (!nextRecipes.length) return;
+
+    const nextGeneration = makeGeneration({
+      recipes: nextRecipes,
+      ingredients,
+      conditions,
     });
+
+    setRecentGenerations((current) => {
+      const next = [nextGeneration, ...current];
+      return next.slice(0, RECENT_GENERATION_LIMIT);
+    });
+  };
+
+  const consumeGeneration = () => {
+    const todayKey = getTodayKey();
+    const currentCount = generationUsage.date === todayKey ? generationUsage.count : 0;
+    if (currentCount >= dailyGenerationLimit) return false;
+
+    setGenerationUsage({ date: todayKey, count: currentCount + 1 });
+    return true;
   };
 
   const addDetectedIngredients = (nextIngredients) => {
@@ -305,6 +480,16 @@ export default function App() {
     }
 
     const selectedConditions = normalizeConditions(conditions);
+    if (!consumeGeneration()) {
+      setError(`今日の生成回数を使い切りました。無料は1日${FREE_DAILY_GENERATION_LIMIT}回、有料は1日${PAID_DAILY_GENERATION_LIMIT}回までです。`);
+      setRecipes([]);
+      setSubmittedIngredients(ingredients);
+      setInputSource(source);
+      setGenerationConditions(selectedConditions);
+      navigate('recipes');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setAddError(null);
@@ -319,11 +504,11 @@ export default function App() {
       const result = await fetchRecipes(ingredients.map((i) => i.name), selectedConditions);
       const generatedRecipes = limitGeneratedRecipes(result.recipes);
       setRecipes(generatedRecipes);
-      rememberRecipes(generatedRecipes);
+      rememberGeneration({ recipes: generatedRecipes, ingredients, conditions: selectedConditions });
     } catch (apiError) {
       const mockRecipes = makeMockRecipes(ingredients, selectedConditions);
       setRecipes(mockRecipes);
-      rememberRecipes(mockRecipes);
+      rememberGeneration({ recipes: mockRecipes, ingredients, conditions: selectedConditions });
       setError(getApiFallbackMessage(apiError));
     } finally {
       setLoading(false);
@@ -347,6 +532,12 @@ export default function App() {
       ? [`別案${Math.floor(existingRecipes.length / 2) + 1}`]
       : selectedConditions;
 
+    if (!consumeGeneration()) {
+      setAddingRecipes(false);
+      setAddError(`今日の生成回数を使い切りました。無料は1日${FREE_DAILY_GENERATION_LIMIT}回、有料は1日${PAID_DAILY_GENERATION_LIMIT}回までです。`);
+      return;
+    }
+
     try {
       const result = await fetchRecipes(
         submittedIngredients.map((i) => i.name),
@@ -355,7 +546,7 @@ export default function App() {
       );
       const { merged, added } = mergeUniqueRecipes(existingRecipes, limitGeneratedRecipes(result.recipes));
       setRecipes(merged);
-      rememberRecipes(added);
+      rememberGeneration({ recipes: added, ingredients: submittedIngredients, conditions: selectedConditions });
       if (!added.length) {
         setAddError('似たタイトルの提案だったため、重複分は追加しませんでした。');
       }
@@ -363,7 +554,7 @@ export default function App() {
       const mockRecipes = makeMockRecipes(submittedIngredients, mockConditions);
       const { merged, added } = mergeUniqueRecipes(existingRecipes, mockRecipes);
       setRecipes(merged);
-      rememberRecipes(added);
+      rememberGeneration({ recipes: added, ingredients: submittedIngredients, conditions: selectedConditions });
       setAddError(getApiFallbackMessage(apiError, 'add'));
     } finally {
       setAddingRecipes(false);
@@ -375,11 +566,61 @@ export default function App() {
     navigate('detail');
   };
 
+  const handleSelectGeneration = (generation) => {
+    setRecipes(generation.recipes ?? []);
+    setSubmittedIngredients(generation.ingredients ?? []);
+    setGenerationConditions(generation.conditions ?? ['おまかせ']);
+    setInputSource('text');
+    setSelectedRecipe(null);
+    setError(null);
+    setAddError(null);
+    navigate('recipes');
+  };
+
+  const handleToggleFavorite = (recipe) => {
+    if (!recipe?.title) return;
+
+    setSavedRecipes((current) => {
+      const recipeKey = normalizeTitle(recipe.title);
+      const existing = current.find((item) => normalizeTitle(item.title) === recipeKey);
+
+      if (existing?.favoritedAt) {
+        if (existing.completedCount || existing.lastCompletedAt) {
+          return current.map((item) => {
+            if (normalizeTitle(item.title) !== recipeKey) return item;
+            const nextItem = { ...item };
+            delete nextItem.favoritedAt;
+            return nextItem;
+          });
+        }
+
+        return current.filter((item) => normalizeTitle(item.title) !== recipeKey);
+      }
+
+      if (existing) {
+        return current.map((item) => (
+          normalizeTitle(item.title) === recipeKey
+            ? { ...item, ...recipe, favoritedAt: new Date().toISOString() }
+            : item
+        ));
+      }
+
+      return [
+        {
+          ...recipe,
+          savedAt: new Date().toISOString(),
+          favoritedAt: new Date().toISOString(),
+          completedCount: 0,
+        },
+        ...current,
+      ];
+    });
+  };
+
   const handleCompleteRecipe = (recipe) => {
     const completed = recipe ? { ...recipe, completedAt: new Date().toISOString() } : null;
     setCompletedRecipe(completed);
     if (completed) {
-      rememberRecipes([completed]);
       setSavedRecipes((current) => {
         const completedKey = normalizeTitle(completed.title);
         const existing = current.find((item) => normalizeTitle(item.title) === completedKey);
@@ -446,8 +687,9 @@ export default function App() {
           selectedRecipe={selectedRecipe}
           completedRecipe={completedRecipe}
           profile={profile}
-          recentRecipes={recentRecipes}
+          recentGenerations={recentGenerations}
           savedRecipes={savedRecipes}
+          generationStatus={generationStatus}
           detectedIngredients={detectedIngredients}
           photoCount={photoCount}
           photoAnalysisLoading={photoAnalysisLoading}
@@ -462,6 +704,8 @@ export default function App() {
           onChangeDetectedIngredients={handleChangeDetectedIngredients}
           onUpdateProfile={handleUpdateProfile}
           onSelectRecipe={handleSelectRecipe}
+          onSelectGeneration={handleSelectGeneration}
+          onToggleFavorite={handleToggleFavorite}
           onCompleteRecipe={handleCompleteRecipe}
         />
       </div>

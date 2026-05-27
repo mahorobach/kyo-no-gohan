@@ -178,7 +178,9 @@ export default function ScreenSaved({
                   </div>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
-                  <Tag tone={recipe.tone ?? 'sage'}>{recipe.completedCount ?? 1}回つくった</Tag>
+                  <Tag tone={recipe.tone ?? 'sage'}>
+                    {recipe.completedCount ? `${recipe.completedCount}回つくった` : 'お気に入り'}
+                  </Tag>
                   <span style={{ fontFamily: FONT.mono, fontSize: 11, color: T.terracottaDeep }}>
                     {recipe.time ?? '--'}分
                   </span>

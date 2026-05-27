@@ -9,26 +9,30 @@ import NavBack from '../components/NavBack';
 const ALL_INGREDIENTS = [
   { name: 'キャベツ', k: 'cabbage' },
   { name: 'にんじん', k: 'carrot' },
-  { name: '玉ねぎ', k: 'onion' },
-  { name: '豚バラ肉', k: 'pork' },
-  { name: '鶏肉', k: 'chicken' },
-  { name: '卵', k: 'egg' },
-  { name: '豆腐', k: 'tofu' },
+  { name: 'ソイミート', k: 'tofu' },
+  { name: '木綿豆腐', k: 'tofu' },
   { name: 'ピーマン', k: 'pepper' },
-  { name: 'トマト', k: 'tomato' },
+  { name: '干椎茸', k: 'miso' },
   { name: '生姜', k: 'ginger' },
-  { name: 'にんにく', k: 'garlic' },
-  { name: 'ねぎ', k: 'leek' },
   { name: 'もやし', k: 'sprouts' },
   { name: 'みそ', k: 'miso' },
+  { name: '角麩', k: 'rice' },
+  { name: 'なす', k: 'pepper' },
+  { name: '緑豆春雨', k: 'sprouts' },
   { name: 'ごはん', k: 'rice' },
-  { name: '牛乳', k: 'milk' },
+  { name: '竹の子', k: 'carrot' },
+  { name: 'ごぼう', k: 'carrot' },
 ];
 
 const CONDITIONS = ['おまかせ', '時短', '節約', 'がっつり', 'やさしい味', '汁物', 'お弁当'];
 const MAX_SELECTED_CONDITIONS = 2;
 
-export default function ScreenTextInput({ navigate, ingredients = [], onGenerateRecipes }) {
+export default function ScreenTextInput({
+  navigate,
+  ingredients = [],
+  generationStatus,
+  onGenerateRecipes,
+}) {
   const ingredientsKey = ingredients.map((item) => item.name).join('|');
   const [draft, setDraft] = useState({ ingredientsKey, entered: ingredients });
   const [inputValue, setInputValue] = useState('');
@@ -90,6 +94,7 @@ export default function ScreenTextInput({ navigate, ingredients = [], onGenerate
   };
 
   const selectedConditionLabel = selectedConditions.join('・');
+  const reachedLimit = generationStatus && generationStatus.remaining <= 0;
 
   return (
     <Paper color={T.bg} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
@@ -148,6 +153,18 @@ export default function ScreenTextInput({ navigate, ingredients = [], onGenerate
           }}>
             冷蔵庫にあるものを<br />教えてください
           </div>
+          {generationStatus && (
+            <div style={{
+              fontFamily: FONT.sans,
+              fontSize: 11,
+              color: reachedLimit ? T.terracottaDeep : T.inkMuted,
+              lineHeight: 1.6,
+              marginTop: 8,
+            }}>
+              今日の生成 {generationStatus.used} / {generationStatus.limit}回
+              {reachedLimit ? '。今日はここまでです。' : `。あと${generationStatus.remaining}回つくれます。`}
+            </div>
+          )}
         </div>
 
         {/* 生成条件 */}
@@ -313,8 +330,9 @@ export default function ScreenTextInput({ navigate, ingredients = [], onGenerate
               'text',
               selectedConditions,
             )}
+            disabled={reachedLimit}
           >
-            {selectedConditionLabel}で2品つくる
+            {reachedLimit ? '今日の生成回数に達しました' : `${selectedConditionLabel}で2品つくる`}
           </Btn>
         </div>
       )}

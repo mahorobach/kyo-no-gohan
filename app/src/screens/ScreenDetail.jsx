@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { T, FONT, PAPER_NOISE } from '../tokens';
 import Btn from '../components/Btn';
 import Tag from '../components/Tag';
 import Veggie from '../components/Veggie';
 import HandUnderline from '../components/HandUnderline';
 import SectionHeader from '../components/SectionHeader';
+import { recipePatterns } from '../data/recipePatterns';
 
 const DEFAULT_RECIPE = {
   title: '豚バラと玉ねぎの\n香ばし生姜焼き',
@@ -27,20 +29,26 @@ const DEFAULT_RECIPE = {
   ],
 };
 
-function CamPill({ children, onClick }) {
+function CamPill({ children, active = false, onClick }) {
   return (
     <div onClick={onClick} style={{
       width: 38, height: 38, borderRadius: 19,
-      background: 'rgba(255,255,255,0.16)',
+      background: active ? T.surface : 'rgba(255,255,255,0.16)',
       backdropFilter: 'blur(12px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: T.surface, fontFamily: FONT.serif, fontSize: 22,
+      color: active ? T.terracotta : T.surface, fontFamily: FONT.serif, fontSize: 22,
       cursor: 'pointer',
     }}>{children}</div>
   );
 }
 
-export default function ScreenDetail({ navigate, selectedRecipe }) {
+export default function ScreenDetail({
+  navigate,
+  selectedRecipe,
+  savedRecipes = [],
+  onToggleFavorite,
+}) {
+  const [favoriteMessage, setFavoriteMessage] = useState('');
   const recipe = selectedRecipe ?? DEFAULT_RECIPE;
   const title = recipe.title ?? DEFAULT_RECIPE.title;
   const description = recipe.description ?? DEFAULT_RECIPE.description;
@@ -48,6 +56,31 @@ export default function ScreenDetail({ navigate, selectedRecipe }) {
   const steps = recipe.steps?.length ? recipe.steps : DEFAULT_RECIPE.steps;
   const missing = ingredients.find((it) => it.have === false);
   const imageUrl = recipe.imageUrl ?? null;
+
+  const normalizeRecipeName = (s = '') => s.replace(/\s+/g, '').trim();
+  const matchedPattern = recipePatterns.find(
+    p => normalizeRecipeName(p.name) === normalizeRecipeName(title),
+  );
+  const amountsSource = (recipe.amounts && Object.keys(recipe.amounts).length > 0)
+    ? recipe.amounts
+    : (matchedPattern?.amounts && Object.keys(matchedPattern.amounts).length > 0)
+      ? matchedPattern.amounts
+      : null;
+  const amountsEntries = amountsSource ? Object.entries(amountsSource) : [];
+  const hasAmounts = amountsEntries.length > 0;
+  const servings = recipe.servings ?? matchedPattern?.servings ?? null;
+  const normalizeTitle = (value = '') => value.replace(/\s+/g, '').trim();
+  const isFavorite = savedRecipes.some((item) => (
+    normalizeTitle(item.title) === normalizeTitle(title) && item.favoritedAt
+  ));
+
+  const handleFavorite = () => {
+    if (!onToggleFavorite) return;
+
+    onToggleFavorite(recipe);
+    setFavoriteMessage(isFavorite ? 'お気に入りを解除しました' : 'レシピ帳に保存しました');
+    window.setTimeout(() => setFavoriteMessage(''), 1600);
+  };
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: T.bg }}>
@@ -89,8 +122,8 @@ export default function ScreenDetail({ navigate, selectedRecipe }) {
                 <path d="M4 12v8a1 1 0 001 1h14a1 1 0 001-1v-8M16 6l-4-4-4 4M12 2v13" />
               </svg>
             </CamPill>
-            <CamPill>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <CamPill active={isFavorite} onClick={handleFavorite}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 14c1.5-2.5 3-4.5 3-7 0-2.5-2-4-4.5-4S13 5 12 7c-1-2-3-4-5.5-4S2 4.5 2 7c0 2.5 1.5 4.5 3 7l7 7 7-7z" />
               </svg>
             </CamPill>
@@ -149,7 +182,7 @@ export default function ScreenDetail({ navigate, selectedRecipe }) {
         }}>
           {[
             { label: 'じかん', value: recipe.time ?? DEFAULT_RECIPE.time, unit: '分' },
-            { label: '人ぶん', value: '2', unit: '人' },
+            { label: '人ぶん', value: servings ?? 2, unit: '人' },
             { label: 'コスト', value: `¥${recipe.yen ?? DEFAULT_RECIPE.yen}`, unit: '/人' },
             { label: 'カロリー', value: recipe.kcal ?? DEFAULT_RECIPE.kcal, unit: 'kcal' },
           ].map((s, i) => (
@@ -166,46 +199,65 @@ export default function ScreenDetail({ navigate, selectedRecipe }) {
         </div>
 
         {/* 材料 */}
-        <SectionHeader num="01" title="ざいりょう" sub="2人ぶん" />
+        <SectionHeader num="01" title="ざいりょう" sub={servings ? `${servings}人ぶん` : '2人ぶん'} />
         <div style={{ marginTop: 14 }}>
-          {ingredients.map((it, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '10px 0',
-              borderBottom: `1px dotted ${T.line}`,
-            }}>
-              {it.k ? <Veggie kind={it.k} size={28} /> : (
+          {hasAmounts ? (
+            amountsEntries.map(([name, qty], i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 0',
+                borderBottom: `1px dotted ${T.line}`,
+              }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: 14,
                   background: T.bgWarm, color: T.inkMuted,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: FONT.serif, fontSize: 13,
-                }}>調</div>
-              )}
-              <div style={{ flex: 1, fontFamily: FONT.serif, fontSize: 14, color: T.ink }}>{it.name}</div>
-              <div style={{ fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft }}>{it.qty}</div>
-              {it.have ? (
-                <div style={{
-                  width: 18, height: 18, borderRadius: 9, background: T.sageTint,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.sageDeep} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              ) : (
-                <div style={{
-                  width: 18, height: 18, borderRadius: 9,
-                  border: `1.5px solid ${T.amber}`, color: T.amber,
-                  fontFamily: FONT.sans, fontSize: 9, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>＋</div>
-              )}
-            </div>
-          ))}
+                  fontFamily: FONT.serif, fontSize: 11,
+                }}>量</div>
+                <div style={{ flex: 1, fontFamily: FONT.serif, fontSize: 14, color: T.ink }}>{name}</div>
+                <div style={{ fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft }}>{qty}</div>
+              </div>
+            ))
+          ) : (
+            ingredients.map((it, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 0',
+                borderBottom: `1px dotted ${T.line}`,
+              }}>
+                {it.k ? <Veggie kind={it.k} size={28} /> : (
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 14,
+                    background: T.bgWarm, color: T.inkMuted,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: FONT.serif, fontSize: 13,
+                  }}>調</div>
+                )}
+                <div style={{ flex: 1, fontFamily: FONT.serif, fontSize: 14, color: T.ink }}>{it.name}</div>
+                <div style={{ fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft }}>{it.qty}</div>
+                {it.have ? (
+                  <div style={{
+                    width: 18, height: 18, borderRadius: 9, background: T.sageTint,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.sageDeep} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                ) : (
+                  <div style={{
+                    width: 18, height: 18, borderRadius: 9,
+                    border: `1.5px solid ${T.amber}`, color: T.amber,
+                    fontFamily: FONT.sans, fontSize: 9, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>＋</div>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
-        {missing && (
+        {!hasAmounts && missing && (
           <div style={{
             marginTop: 14, padding: '12px 14px',
             background: T.amberTint, borderRadius: 14,
@@ -256,6 +308,27 @@ export default function ScreenDetail({ navigate, selectedRecipe }) {
         <div style={{ height: 100 }} />
       </div>
 
+      {favoriteMessage && (
+        <div style={{
+          position: 'absolute',
+          left: 22,
+          right: 22,
+          bottom: 104,
+          zIndex: 20,
+          padding: '11px 14px',
+          borderRadius: 16,
+          background: T.ink,
+          color: T.surface,
+          fontFamily: FONT.sans,
+          fontSize: 12,
+          fontWeight: 700,
+          textAlign: 'center',
+          boxShadow: '0 12px 24px -16px rgba(42,31,20,0.65)',
+        }}>
+          {favoriteMessage}
+        </div>
+      )}
+
       {/* ボトムアクションバー */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -264,16 +337,30 @@ export default function ScreenDetail({ navigate, selectedRecipe }) {
         borderTop: `1px solid ${T.lineSoft}`,
         display: 'flex', gap: 10, alignItems: 'center',
       }}>
-        <div style={{
+        <button
+          type="button"
+          aria-label={isFavorite ? 'お気に入りを解除' : 'お気に入りに追加'}
+          style={{
           width: 50, height: 50, borderRadius: 25,
-          background: T.bg, border: `1px solid ${T.line}`,
+          background: isFavorite ? T.terracottaTint : T.bg,
+          border: `1px solid ${isFavorite ? T.terracotta : T.line}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer',
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={T.terracotta} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          padding: 0,
+        }} onClick={handleFavorite}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill={isFavorite ? T.terracotta : 'none'}
+            stroke={T.terracotta}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M19 14c1.5-2.5 3-4.5 3-7 0-2.5-2-4-4.5-4S13 5 12 7c-1-2-3-4-5.5-4S2 4.5 2 7c0 2.5 1.5 4.5 3 7l7 7 7-7z" />
           </svg>
-        </div>
+        </button>
         <Btn kind="accent" style={{ flex: 1 }}
           onClick={() => navigate('cooking')}
           icon={

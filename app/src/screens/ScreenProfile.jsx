@@ -75,11 +75,34 @@ function SettingRow({ title, description, badge }) {
   );
 }
 
+function PlanButton({ active, children, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        height: 42,
+        borderRadius: 14,
+        border: `1px solid ${active ? T.terracotta : T.line}`,
+        background: active ? T.terracottaTint : T.surface,
+        color: active ? T.terracottaDeep : T.ink,
+        fontFamily: FONT.sans,
+        fontSize: 13,
+        fontWeight: 700,
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function ScreenProfile({
   navigate,
   profile = { name: 'さくらこ' },
   savedRecipes = [],
-  recentRecipes = [],
+  recentGenerations = [],
+  generationStatus,
   completedRecipe,
   onUpdateProfile,
 }) {
@@ -199,8 +222,49 @@ export default function ScreenProfile({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <StatCard label="作った料理" value={completedCount} tone="terracotta" />
             <StatCard label="レシピ帳" value={savedRecipes.length} tone="sage" />
-            <StatCard label="生成履歴" value={recentRecipes.length} tone="amber" />
+            <StatCard label="生成履歴" value={recentGenerations.length} tone="amber" />
             <StatCard label="今日の完成" value={hasTodayCompleted ? 1 : 0} tone="sage" />
+          </div>
+        </div>
+
+        <div style={{ padding: '16px 22px 0' }}>
+          <div style={{
+            background: T.surface,
+            border: `1px solid ${T.line}`,
+            borderRadius: 22,
+            padding: '16px',
+          }}>
+            <div style={{
+              fontFamily: FONT.serif,
+              fontSize: 18,
+              color: T.ink,
+              fontWeight: 600,
+            }}>
+              生成プラン
+            </div>
+            <div style={{
+              fontFamily: FONT.sans,
+              fontSize: 11,
+              color: T.inkSoft,
+              lineHeight: 1.6,
+              marginTop: 5,
+            }}>
+              今日の生成 {generationStatus?.used ?? 0} / {generationStatus?.limit ?? 3}回
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <PlanButton
+                active={(profile.plan ?? 'free') === 'free'}
+                onClick={() => onUpdateProfile && onUpdateProfile({ plan: 'free' })}
+              >
+                無料 3回/日
+              </PlanButton>
+              <PlanButton
+                active={profile.plan === 'paid'}
+                onClick={() => onUpdateProfile && onUpdateProfile({ plan: 'paid' })}
+              >
+                有料 10回/日
+              </PlanButton>
+            </div>
           </div>
         </div>
 

@@ -154,7 +154,12 @@ function StartPanel({ ingredients, onGenerate, onEdit }) {
   );
 }
 
-function SmallRecipeCard({ recipe, onClick }) {
+function SmallGenerationCard({ generation, onClick }) {
+  const recipes = generation.recipes ?? [];
+  const title = recipes.map((recipe) => recipe.title).filter(Boolean).join(' / ');
+  const label = (generation.conditions ?? ['おまかせ']).join('・');
+  const ingredientNames = (generation.ingredients ?? []).map((item) => item.name).slice(0, 3).join('、');
+
   return (
     <div onClick={onClick} style={{
       width: 112, minHeight: 132, flexShrink: 0,
@@ -168,7 +173,7 @@ function SmallRecipeCard({ recipe, onClick }) {
         fontFamily: FONT.sans, fontSize: 10, color: T.inkMuted,
         letterSpacing: '0.08em', marginBottom: 8,
       }}>
-        {recipe.kana ?? '最近の生成'}
+        {label}
       </div>
       <div style={{
         fontFamily: FONT.serif, fontSize: 14, fontWeight: 600,
@@ -176,12 +181,17 @@ function SmallRecipeCard({ recipe, onClick }) {
         display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
       }}>
-        {recipe.title}
+        {title || '生成した献立'}
       </div>
       <div style={{ marginTop: 'auto', paddingTop: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
-        <span style={{ fontFamily: FONT.mono, fontSize: 11, color: T.terracottaDeep }}>{recipe.time ?? '--'}分</span>
+        <span style={{ fontFamily: FONT.mono, fontSize: 11, color: T.terracottaDeep }}>{recipes.length}品</span>
         <span style={{ width: 3, height: 3, borderRadius: 2, background: T.line }} />
-        <span style={{ fontFamily: FONT.sans, fontSize: 10, color: T.inkMuted }}>{recipe.diff ?? 'レシピ'}</span>
+        <span style={{
+          fontFamily: FONT.sans, fontSize: 10, color: T.inkMuted,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {ingredientNames || '食材'}
+        </span>
       </div>
     </div>
   );
@@ -219,19 +229,23 @@ function AgainCard({ onClick }) {
 export default function HomeA({
   navigate,
   completedRecipe,
-  recentRecipes = [],
+  recentGenerations = [],
   ingredients = [],
+  generationStatus,
   onGenerateRecipes,
   onSelectRecipe,
+  onSelectGeneration,
 }) {
   const hasTodayCompleted = isSameDate(completedRecipe?.completedAt);
-  const recent = recentRecipes
-    .filter((recipe) => recipe.title !== completedRecipe?.title)
-    .slice(0, 3);
+  const recent = recentGenerations.slice(0, 3);
   const slots = [...recent];
 
   const handleRecipeClick = (recipe) => {
     if (onSelectRecipe) onSelectRecipe(recipe);
+  };
+
+  const handleGenerationClick = (generation) => {
+    if (onSelectGeneration) onSelectGeneration(generation);
   };
 
   const handleGenerateAgain = () => {
@@ -263,6 +277,18 @@ export default function HomeA({
             <RecipeHero recipe={completedRecipe} onClick={() => handleRecipeClick(completedRecipe)} />
           ) : (
             <StartPanel ingredients={ingredients} onGenerate={handleGenerateAgain} onEdit={handleStartEdit} />
+          )}
+          {generationStatus && (
+            <div style={{
+              marginTop: 10,
+              fontFamily: FONT.sans,
+              fontSize: 11,
+              color: generationStatus.remaining > 0 ? T.inkMuted : T.terracottaDeep,
+              lineHeight: 1.6,
+            }}>
+              今日の生成 {generationStatus.used} / {generationStatus.limit}回
+              {generationStatus.plan === 'free' ? '（無料）' : '（有料）'}
+            </div>
           )}
         </div>
 
@@ -307,7 +333,7 @@ export default function HomeA({
             paddingRight: 22,
           }}>
             <Eyebrow color={T.sageDeep}>最近の生成</Eyebrow>
-            {recentRecipes.length > 0 && (
+            {recentGenerations.length > 0 && (
               <button
                 onClick={() => navigate('history')}
                 style={{
@@ -326,8 +352,12 @@ export default function HomeA({
             )}
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 12, paddingRight: 22, overflow: 'hidden' }}>
-            {slots.map((recipe) => (
-              <SmallRecipeCard key={`${recipe.title}-${recipe.description ?? ''}`} recipe={recipe} onClick={() => handleRecipeClick(recipe)} />
+            {slots.map((generation) => (
+              <SmallGenerationCard
+                key={generation.id}
+                generation={generation}
+                onClick={() => handleGenerationClick(generation)}
+              />
             ))}
             {Array.from({ length: Math.max(0, 3 - slots.length) }).map((_, i) => (
               <AgainCard key={i} onClick={handleGenerateAgain} />
