@@ -5,6 +5,7 @@ import Tag from '../components/Tag';
 import YenStamp from '../components/YenStamp';
 import Btn from '../components/Btn';
 import TabBar from '../components/TabBar';
+import { getDishImage } from '../lib/dishImage';
 
 const isSameDate = (dateText, base = new Date()) => {
   if (!dateText) return false;
@@ -53,6 +54,7 @@ function HomeGreeting({ name = 'さくらこ' }) {
 }
 
 function RecipeHero({ recipe, onClick }) {
+  const dishImage = getDishImage(recipe);
   return (
     <div style={{
       marginTop: 12, borderRadius: 24, overflow: 'hidden',
@@ -66,6 +68,18 @@ function RecipeHero({ recipe, onClick }) {
         display: 'flex', alignItems: 'flex-end', padding: 16,
       }}>
         <Tag tone="ink">＼ 完成したレシピ ／</Tag>
+        <img
+          src={dishImage}
+          alt=""
+          style={{
+            position: 'absolute',
+            right: 16, bottom: 0,
+            width: 110, height: 110,
+            objectFit: 'contain',
+            opacity: 0.92,
+            filter: 'drop-shadow(0 2px 8px rgba(42,31,20,0.15))',
+          }}
+        />
       </div>
       <div style={{ padding: '16px 18px 18px' }}>
         <div style={{

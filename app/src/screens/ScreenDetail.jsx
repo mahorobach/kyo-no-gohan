@@ -6,6 +6,7 @@ import Veggie from '../components/Veggie';
 import HandUnderline from '../components/HandUnderline';
 import SectionHeader from '../components/SectionHeader';
 import { recipePatterns } from '../data/recipePatterns';
+import { getDishImage } from '../lib/dishImage';
 
 const DEFAULT_RECIPE = {
   title: '豚バラと玉ねぎの\n香ばし生姜焼き',
@@ -56,6 +57,7 @@ export default function ScreenDetail({
   const steps = recipe.steps?.length ? recipe.steps : DEFAULT_RECIPE.steps;
   const missing = ingredients.find((it) => it.have === false);
   const imageUrl = recipe.imageUrl ?? null;
+  const dishImage = getDishImage(recipe);
 
   const normalizeRecipeName = (s = '') => s.replace(/\s+/g, '').trim();
   const matchedPattern = recipePatterns.find(
@@ -90,7 +92,7 @@ export default function ScreenDetail({
         background: `linear-gradient(135deg, ${T.amberTint} 0%, ${T.terracottaTint} 100%)`,
         backgroundImage: `${PAPER_NOISE}, repeating-linear-gradient(45deg, ${T.amberTint} 0 14px, ${T.amberTint} 14px 28px)`,
       }}>
-        {imageUrl && (
+        {imageUrl ? (
           <img
             src={imageUrl}
             alt={title.replace(/\n/g, '')}
@@ -98,6 +100,19 @@ export default function ScreenDetail({
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',
               objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <img
+            src={dishImage}
+            alt=""
+            style={{
+              position: 'absolute',
+              right: 24, bottom: 24,
+              width: 140, height: 140,
+              objectFit: 'contain',
+              opacity: 0.88,
+              filter: 'drop-shadow(0 4px 12px rgba(42,31,20,0.18))',
             }}
           />
         )}

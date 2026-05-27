@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+
+<defs>
+  <filter id="grain" x="0" y="0" width="100%" height="100%">
+    <feTurbulence baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" seed="3"></feTurbulence>
+    <feColorMatrix values="0 0 0 0 0.16  0 0 0 0 0.12  0 0 0 0 0.08  0 0 0 0.05 0"></feColorMatrix>
+  </filter>
+  <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur stdDeviation="0.6"></feGaussianBlur>
+  </filter>
+  <radialGradient id="bowlShadow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"></stop>
+    <stop offset="85%" stop-color="rgba(0,0,0,0)"></stop>
+    <stop offset="100%" stop-color="rgba(42,31,20,0.18)"></stop>
+  </radialGradient>
+  <radialGradient id="ambBroth" cx="50%" cy="40%" r="55%">
+    <stop offset="0%" stop-color="#E8B870"></stop>
+    <stop offset="100%" stop-color="#A87A3E"></stop>
+  </radialGradient>
+  <radialGradient id="misoBroth" cx="50%" cy="40%" r="55%">
+    <stop offset="0%" stop-color="#D4A055"></stop>
+    <stop offset="100%" stop-color="#7A4F1E"></stop>
+  </radialGradient>
+  <radialGradient id="redSauce" cx="50%" cy="40%" r="55%">
+    <stop offset="0%" stop-color="#D86048"></stop>
+    <stop offset="100%" stop-color="#8E2D1F"></stop>
+  </radialGradient>
+  <radialGradient id="lacquerSheen" cx="40%" cy="35%" r="60%">
+    <stop offset="0%" stop-color="#5C3A28"></stop>
+    <stop offset="100%" stop-color="#2A1810"></stop>
+  </radialGradient>
+</defs>
+<rect width="800" height="800" fill="#F5EFE0"></rect>
+<rect width="800" height="800" filter="url(#grain)"></rect>
+<g transform="rotate(-4 400 400)">
+  <ellipse cx="400" cy="426" rx="332.8" ry="208" fill="rgba(42,31,20,0.12)" filter="url(#soft)"></ellipse>
+  <rect x="80" y="240" width="640" height="320" fill="#3E2418" rx="14"></rect>
+  <rect x="92" y="252" width="616" height="296" fill="#3A2E22" rx="10"></rect>
+  
+  <path d="M180 400 Q 180 320, 320 310 L 540 310 Q 640 320, 640 400 Q 640 480, 540 490 L 320 490 Q 180 480, 180 400 Z" fill="#D4A55E"></path>
+  <path d="M180 400 Q 180 340, 320 330 L 540 330 Q 620 340, 620 400 Q 620 460, 540 470 L 320 470 Q 180 460, 180 400 Z" fill="#E8C580" opacity="0.5"></path>
+  
+  <path d="M240 320 L 228 480" stroke="#5C3A1F" stroke-width="5" stroke-linecap="round" opacity="0.7"></path><path d="M320 320 L 308 480" stroke="#5C3A1F" stroke-width="5" stroke-linecap="round" opacity="0.7"></path><path d="M400 320 L 388 480" stroke="#5C3A1F" stroke-width="5" stroke-linecap="round" opacity="0.7"></path><path d="M480 320 L 468 480" stroke="#5C3A1F" stroke-width="5" stroke-linecap="round" opacity="0.7"></path><path d="M560 320 L 548 480" stroke="#5C3A1F" stroke-width="5" stroke-linecap="round" opacity="0.7"></path>
+  
+  <path d="M180 400 L 100 340 L 120 400 L 100 460 Z" fill="#D4A55E"></path>
+  
+  <circle cx="590" cy="380" r="6" fill="#3E2418"></circle>
+  
+  <g transform="translate(660 480) rotate(20)">
+    <path d="M-50 0 A 50 50 0 0 1 50 0 Z" fill="#F5C53C"></path>
+    <path d="M-50 0 A 50 50 0 0 1 50 0 Z" fill="#E8C580" opacity="0.3"></path>
+    <line x1="-50" y1="0" x2="50" y2="0" stroke="#F8F2E0" stroke-width="2"></line>
+    <line x1="0" y1="0" x2="38.97114317029974" y2="-22.499999999999996" stroke="#F8F2E0" stroke-width="2"></line><line x1="0" y1="0" x2="22.499999999999996" y2="-38.97114317029974" stroke="#F8F2E0" stroke-width="2"></line><line x1="0" y1="0" x2="2.7554552980815448e-15" y2="-45" stroke="#F8F2E0" stroke-width="2"></line><line x1="0" y1="0" x2="-22.50000000000001" y2="-38.97114317029973" stroke="#F8F2E0" stroke-width="2"></line><line x1="0" y1="0" x2="-38.97114317029974" y2="-22.499999999999996" stroke="#F8F2E0" stroke-width="2"></line>
+  </g>
+</g></svg>

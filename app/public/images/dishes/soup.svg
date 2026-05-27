@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+
+<defs>
+  <filter id="grain" x="0" y="0" width="100%" height="100%">
+    <feTurbulence baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" seed="3"></feTurbulence>
+    <feColorMatrix values="0 0 0 0 0.16  0 0 0 0 0.12  0 0 0 0 0.08  0 0 0 0.05 0"></feColorMatrix>
+  </filter>
+  <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur stdDeviation="0.6"></feGaussianBlur>
+  </filter>
+  <radialGradient id="bowlShadow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"></stop>
+    <stop offset="85%" stop-color="rgba(0,0,0,0)"></stop>
+    <stop offset="100%" stop-color="rgba(42,31,20,0.18)"></stop>
+  </radialGradient>
+  <radialGradient id="ambBroth" cx="50%" cy="40%" r="55%">
+    <stop offset="0%" stop-color="#E8B870"></stop>
+    <stop offset="100%" stop-color="#A87A3E"></stop>
+  </radialGradient>
+  <radialGradient id="misoBroth" cx="50%" cy="40%" r="55%">
+    <stop offset="0%" stop-color="#D4A055"></stop>
+    <stop offset="100%" stop-color="#7A4F1E"></stop>
+  </radialGradient>
+  <radialGradient id="redSauce" cx="50%" cy="40%" r="55%">
+    <stop offset="0%" stop-color="#D86048"></stop>
+    <stop offset="100%" stop-color="#8E2D1F"></stop>
+  </radialGradient>
+  <radialGradient id="lacquerSheen" cx="40%" cy="35%" r="60%">
+    <stop offset="0%" stop-color="#5C3A28"></stop>
+    <stop offset="100%" stop-color="#2A1810"></stop>
+  </radialGradient>
+</defs>
+<rect width="800" height="800" fill="#F5EFE0"></rect>
+<rect width="800" height="800" filter="url(#grain)"></rect>
+<ellipse cx="400" cy="435.6" rx="332.8" ry="332.8" fill="rgba(42,31,20,0.12)" filter="url(#soft)"></ellipse>
+<circle cx="400" cy="400" r="320" fill="#8B5E3C"></circle>
+<circle cx="400" cy="400" r="310" fill="#D4B584" opacity="0.6"></circle>
+<circle cx="400" cy="400" r="285" fill="#5C3A1F"></circle>
+<circle cx="400" cy="400" r="265" fill="url(#misoBroth)"></circle>
+
+<g>
+  <rect x="320" y="320" width="60" height="60" fill="#F8F2E0" stroke="#F2DDB0" stroke-width="2" transform="rotate(-8 350 350)"></rect>
+  <rect x="430" y="350" width="55" height="55" fill="#F8F2E0" stroke="#F2DDB0" stroke-width="2" transform="rotate(12 457 377)"></rect>
+  <rect x="370" y="430" width="58" height="58" fill="#F8F2E0" stroke="#F2DDB0" stroke-width="2" transform="rotate(20 399 459)"></rect>
+</g>
+
+<path d="M250 400 Q 280 380 310 410 Q 290 440 270 430 Q 240 420 250 400 Z" fill="#3E5C30"></path>
+<path d="M480 470 Q 510 450 530 480 Q 510 510 490 500 Q 470 490 480 470 Z" fill="#3E5C30"></path>
+<path d="M280 480 Q 305 470 320 495 Q 305 510 295 505 Q 270 500 280 480 Z" fill="#3E5C30" opacity="0.85"></path>
+<circle cx="400.0" cy="400.0" r="6" fill="#7A9B6C"></circle><circle cx="400.0" cy="400.0" r="2.4" fill="#DDE4C8"></circle><circle cx="395.3" cy="436.4" r="6" fill="#7A9B6C"></circle><circle cx="395.3" cy="436.4" r="2.4" fill="#DDE4C8"></circle><circle cx="349.9" cy="386.7" r="6" fill="#7A9B6C"></circle><circle cx="349.9" cy="386.7" r="2.4" fill="#DDE4C8"></circle><circle cx="424.0" cy="341.2" r="6" fill="#7A9B6C"></circle><circle cx="424.0" cy="341.2" r="2.4" fill="#DDE4C8"></circle><circle cx="463.8" cy="436.2" r="6" fill="#7A9B6C"></circle><circle cx="463.8" cy="436.2" r="2.4" fill="#DDE4C8"></circle><circle cx="350.6" cy="465.5" r="6" fill="#7A9B6C"></circle><circle cx="350.6" cy="465.5" r="2.4" fill="#DDE4C8"></circle><circle cx="335.8" cy="337.1" r="6" fill="#7A9B6C"></circle><circle cx="335.8" cy="337.1" r="2.4" fill="#DDE4C8"></circle><circle cx="476.3" cy="340.0" r="6" fill="#7A9B6C"></circle><circle cx="476.3" cy="340.0" r="2.4" fill="#DDE4C8"></circle><circle cx="453.1" cy="489.1" r="6" fill="#7A9B6C"></circle><circle cx="453.1" cy="489.1" r="2.4" fill="#DDE4C8"></circle>
+
+<path d="M340 130 Q 330 100, 350 80 T 360 30" stroke="#F2DDB0" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7"></path>
+<path d="M440 130 Q 450 100, 430 80 T 420 30" stroke="#F2DDB0" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7"></path></svg>
