@@ -36,6 +36,19 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  // メール/パスワードでログイン
+  const signInWithEmail = async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  };
+
+  // メール/パスワードで新規登録（確認メール送信）
+  const signUpWithEmail = async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    return data;
+  };
+
   // ログアウト
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -43,7 +56,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );
