@@ -4,6 +4,7 @@ import Paper from '../components/Paper';
 import Tag from '../components/Tag';
 import TabBar from '../components/TabBar';
 import Btn from '../components/Btn';
+import { getDishImage } from '../lib/dishImage';
 
 const FILTERS = [
   { key: 'all', label: 'すべて' },
@@ -142,6 +143,9 @@ export default function ScreenSaved({
                 flexShrink: 0,
                 background: `repeating-linear-gradient(${30 + index * 22}deg, ${stripeColors[index % stripeColors.length]} 0 8px, ${T.surface} 8px 16px)`,
                 position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}>
                 <div style={{
                   position: 'absolute',
@@ -157,6 +161,11 @@ export default function ScreenSaved({
                 }}>
                   {formatSavedDate(recipe.lastCompletedAt ?? recipe.savedAt)}
                 </div>
+                <img
+                  src={getDishImage(recipe)}
+                  alt=""
+                  style={{ width: 64, height: 64, objectFit: 'contain', opacity: 0.9 }}
+                />
               </div>
               <div style={{ flex: 1, padding: '12px 14px', minWidth: 0 }}>
                 <div style={{ fontFamily: FONT.serif, fontSize: 15, fontWeight: 600, color: T.ink, lineHeight: 1.4, whiteSpace: 'pre-line' }}>
