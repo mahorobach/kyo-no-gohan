@@ -105,6 +105,7 @@ export default function ScreenProfile({
   generationStatus,
   completedRecipe,
   onUpdateProfile,
+  onSignOut,
 }) {
   const [nameInput, setNameInput] = useState(profile.name);
   const completedCount = savedRecipes.reduce((sum, recipe) => sum + (recipe.completedCount ?? 1), 0);
@@ -147,23 +148,38 @@ export default function ScreenProfile({
               {profile.name}さんの台所
             </div>
           </div>
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            background: T.terracottaTint,
-            color: T.terracottaDeep,
-            border: `1.5px solid ${T.surface}`,
-            boxShadow: `0 0 0 1px ${T.terracotta}33`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: FONT.serif,
-            fontSize: 18,
-            fontWeight: 700,
-          }}>
-            {profile.name.slice(0, 1)}
-          </div>
+          {profile.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt={profile.name}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                objectFit: 'cover',
+                border: `1.5px solid ${T.surface}`,
+                boxShadow: `0 0 0 1px ${T.terracotta}33`,
+              }}
+            />
+          ) : (
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              background: T.terracottaTint,
+              color: T.terracottaDeep,
+              border: `1.5px solid ${T.surface}`,
+              boxShadow: `0 0 0 1px ${T.terracotta}33`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: FONT.serif,
+              fontSize: 18,
+              fontWeight: 700,
+            }}>
+              {profile.name.slice(0, 1)}
+            </div>
+          )}
         </div>
 
         <div style={{ padding: '22px 22px 0' }}>
@@ -276,9 +292,9 @@ export default function ScreenProfile({
             padding: '4px 16px',
           }}>
             <SettingRow
-              title="ログインして同期"
-              description="スマホやPCで同じレシピ帳を使えるようにする機能です。"
-              badge="準備中"
+              title="Googleアカウント連携"
+              description={`${profile.name} でログイン中。複数デバイスで同期できます。`}
+              badge="接続中"
             />
             <SettingRow
               title="写真判定の精度"
@@ -304,6 +320,19 @@ export default function ScreenProfile({
             友人レビュー中です。レシピの自然さ、材料の使い方、毎日使いたくなるかを見てもらう段階です。
           </div>
         </div>
+
+        {/* ログアウトボタン */}
+        {onSignOut && (
+          <div style={{ padding: '16px 22px 8px' }}>
+            <Btn
+              kind="soft"
+              style={{ width: '100%', height: 46, fontSize: 13, color: T.terracottaDeep }}
+              onClick={onSignOut}
+            >
+              ログアウト
+            </Btn>
+          </div>
+        )}
       </div>
 
       <TabBar active="me" onTab={handleTab} />

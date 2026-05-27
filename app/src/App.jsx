@@ -11,8 +11,11 @@ import ScreenSaved from './screens/ScreenSaved';
 import ScreenCooking from './screens/ScreenCooking';
 import ScreenHistory from './screens/ScreenHistory';
 import ScreenProfile from './screens/ScreenProfile';
+import ScreenLogin from './screens/ScreenLogin';
 import { analyzeIngredientPhotos, fetchRecipes } from './lib/gemini';
 import { recipePatterns } from './data/recipePatterns';
+import { useAuth } from './contexts/AuthContext';
+import { T, FONT } from './tokens';
 
 const RECENT_GENERATION_LIMIT = 12;
 const SAVED_RECIPES_STORAGE_KEY = 'kyou-no-gohan:saved-recipes';
@@ -332,6 +335,7 @@ const SCREENS = {
 };
 
 export default function App() {
+  const { user, loading: authLoading, signOut } = useAuth();
   const [screen, setScreen] = useState('onboarding');
   const [recipes, setRecipes] = useState(null);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
@@ -654,6 +658,29 @@ export default function App() {
 
   const CurrentScreen = SCREENS[screen] || SCREENS.home;
 
+  // Supabase ユーザー情報をプロフィールにマージ
+  const displayProfile = {
+    ...profile,
+    name: user?.user_metadata?.full_name
+      ?? user?.user_metadata?.name
+      ?? user?.email?.split('@')[0]
+      ?? profile.name,
+    avatarUrl: user?.user_metadata?.avatar_url
+      ?? user?.user_metadata?.picture
+      ?? null,
+  };
+
+  // 外枠（モックフォン）共通スタイル
+  const phoneShell = {
+    width: 390,
+    height: 844,
+    borderRadius: 44,
+    overflow: 'hidden',
+    position: 'relative',
+    boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(0,0,0,0.6)',
+    flexShrink: 0,
+  };
+
   return (
     <div
       style={{
@@ -666,49 +693,65 @@ export default function App() {
         padding: '20px 0',
       }}
     >
-      <div
-        style={{
-          width: 390,
-          height: 844,
-          borderRadius: 44,
-          overflow: 'hidden',
-          position: 'relative',
-          boxShadow:
-            '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(0,0,0,0.6)',
-          flexShrink: 0,
-        }}
-      >
-        <CurrentScreen
-          navigate={navigate}
-          recipes={recipes}
-          loading={loading}
-          error={error}
-          addError={addError}
-          selectedRecipe={selectedRecipe}
-          completedRecipe={completedRecipe}
-          profile={profile}
-          recentGenerations={recentGenerations}
-          savedRecipes={savedRecipes}
-          generationStatus={generationStatus}
-          detectedIngredients={detectedIngredients}
-          photoCount={photoCount}
-          photoAnalysisLoading={photoAnalysisLoading}
-          photoAnalysisError={photoAnalysisError}
-          ingredients={submittedIngredients}
-          inputSource={inputSource}
-          generationLabel={getConditionLabel(generationConditions)}
-          addingRecipes={addingRecipes}
-          onGenerateRecipes={handleGenerateRecipes}
-          onAddRecipes={handleAddRecipes}
-          onAnalyzePhoto={handleAnalyzePhoto}
-          onChangeDetectedIngredients={handleChangeDetectedIngredients}
-          onUpdateProfile={handleUpdateProfile}
-          onSelectRecipe={handleSelectRecipe}
-          onSelectGeneration={handleSelectGeneration}
-          onToggleFavorite={handleToggleFavorite}
-          onCompleteRecipe={handleCompleteRecipe}
-        />
-      </div>
+      {/* 認証状態の読み込み中 */}
+      {authLoading && (
+        <div style={phoneShell}>
+          <div style={{
+            width: '100%', height: '100%', background: T.bg,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: 16,
+          }}>
+            <div style={{ fontSize: 40 }}>🥢</div>
+            <div style={{ fontFamily: FONT.sans, fontSize: 13, color: T.inkMuted }}>
+              読み込み中…
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 未ログイン → ログイン画面 */}
+      {!authLoading && !user && (
+        <div style={phoneShell}>
+          <ScreenLogin />
+        </div>
+      )}
+
+      {/* ログイン済み → 通常のアプリ */}
+      {!authLoading && user && (
+        <div style={phoneShell}>
+          <CurrentScreen
+            navigate={navigate}
+            recipes={recipes}
+            loading={loading}
+            error={error}
+            addError={addError}
+            selectedRecipe={selectedRecipe}
+            completedRecipe={completedRecipe}
+            profile={displayProfile}
+            recentGenerations={recentGenerations}
+            savedRecipes={savedRecipes}
+            generationStatus={generationStatus}
+            detectedIngredients={detectedIngredients}
+            photoCount={photoCount}
+            photoAnalysisLoading={photoAnalysisLoading}
+            photoAnalysisError={photoAnalysisError}
+            ingredients={submittedIngredients}
+            inputSource={inputSource}
+            generationLabel={getConditionLabel(generationConditions)}
+            addingRecipes={addingRecipes}
+            onGenerateRecipes={handleGenerateRecipes}
+            onAddRecipes={handleAddRecipes}
+            onAnalyzePhoto={handleAnalyzePhoto}
+            onChangeDetectedIngredients={handleChangeDetectedIngredients}
+            onUpdateProfile={handleUpdateProfile}
+            onSelectRecipe={handleSelectRecipe}
+            onSelectGeneration={handleSelectGeneration}
+            onToggleFavorite={handleToggleFavorite}
+            onCompleteRecipe={handleCompleteRecipe}
+            onSignOut={signOut}
+          />
+        </div>
+      )}
     </div>
   );
 }

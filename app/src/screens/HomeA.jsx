@@ -19,7 +19,7 @@ const isSameDate = (dateText, base = new Date()) => {
   );
 };
 
-function HomeGreeting({ name = 'さくらこ' }) {
+function HomeGreeting({ name = 'さくらこ', avatarUrl }) {
   const now = new Date();
   const dayNames = ['にちようび', 'げつようび', 'かようび', 'すいようび', 'もくようび', 'きんようび', 'どようび'];
   const monthDay = `${now.getMonth() + 1}月 ${now.getDate()}日`;
@@ -41,14 +41,29 @@ function HomeGreeting({ name = 'さくらこ' }) {
           こんばんは、<span style={{ color: T.terracotta }}>{name}</span>さん
         </div>
       </div>
-      <div style={{
-        width: 38, height: 38, borderRadius: 19,
-        background: T.terracottaTint, color: T.terracottaDeep,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: FONT.serif, fontSize: 16, fontWeight: 600,
-        border: `1.5px solid ${T.surface}`,
-        boxShadow: `0 0 0 1px ${T.terracotta}33`,
-      }}>桜</div>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          style={{
+            width: 38, height: 38, borderRadius: 19,
+            objectFit: 'cover',
+            border: `1.5px solid ${T.surface}`,
+            boxShadow: `0 0 0 1px ${T.terracotta}33`,
+          }}
+        />
+      ) : (
+        <div style={{
+          width: 38, height: 38, borderRadius: 19,
+          background: T.terracottaTint, color: T.terracottaDeep,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: FONT.serif, fontSize: 16, fontWeight: 600,
+          border: `1.5px solid ${T.surface}`,
+          boxShadow: `0 0 0 1px ${T.terracotta}33`,
+        }}>
+          {name.slice(0, 1)}
+        </div>
+      )}
     </div>
   );
 }
@@ -233,6 +248,7 @@ export default function HomeA({
   recentGenerations = [],
   ingredients = [],
   generationStatus,
+  profile = {},
   onGenerateRecipes,
   onSelectRecipe,
   onSelectGeneration,
@@ -270,7 +286,7 @@ export default function HomeA({
   return (
     <Paper color={T.bg} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <div style={{ height: '100%', overflowY: 'auto', paddingBottom: 104 }}>
-        <HomeGreeting />
+        <HomeGreeting name={profile.name} avatarUrl={profile.avatarUrl} />
 
         <div style={{ padding: '22px 22px 0' }}>
           <Eyebrow>{hasTodayCompleted ? '今日作った料理' : '今日の候補を作る'}</Eyebrow>
