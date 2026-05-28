@@ -187,31 +187,48 @@ export default function ScreenOnboarding() {
           お送りしました。<br />
           メール内のリンクをクリックして<br />登録を完了してください。
         </div>
+
+        {/* スパムフォルダの案内 */}
+        <div style={{
+          background: T.amberTint,
+          border: `1px solid ${T.amber}55`,
+          borderRadius: 10,
+          padding: '10px 16px',
+          fontFamily: FONT.sans, fontSize: 12, color: T.inkSoft,
+          textAlign: 'left', lineHeight: 1.8, width: '100%',
+        }}>
+          <div style={{ fontWeight: 600, color: T.ink, marginBottom: 4 }}>届かない場合の確認事項</div>
+          <div>・迷惑メール・スパムフォルダを確認</div>
+          <div>・iCloud メールは届きにくい場合あり</div>
+          <div>・Gmail など別アドレスで試してみる</div>
+        </div>
+
         {/* 再送ボタン */}
         <button
           onClick={handleResend}
           disabled={resendStatus === 'sending' || resendStatus === 'sent'}
           style={{
             fontFamily: FONT.sans, fontSize: 13,
-            color: resendStatus === 'sent' ? T.sage : T.inkMuted,
-            background: 'none', border: 'none', cursor: resendStatus === 'sent' ? 'default' : 'pointer',
-            marginTop: 4,
+            color: resendStatus === 'sent' ? T.sageDeep : T.terracotta,
+            background: 'none', border: 'none',
+            cursor: resendStatus === 'sent' ? 'default' : 'pointer',
+            marginTop: 0,
           }}
         >
           {resendStatus === 'sending' && '送信中…'}
-          {resendStatus === 'sent' && 'メールを再送しました'}
+          {resendStatus === 'sent' && '再送しました（数分お待ちください）'}
           {resendStatus === 'error' && '再送に失敗しました。時間をおいて試してください'}
-          {!resendStatus && 'メールが届かない場合はここをタップ'}
+          {!resendStatus && 'メールを再送する'}
         </button>
 
         <button
           onClick={() => { setSignupDone(false); setIsSignup(false); setMode('email'); setResendStatus(null); }}
           style={{
             fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
-            background: 'none', border: 'none', cursor: 'pointer', marginTop: 4,
+            background: 'none', border: 'none', cursor: 'pointer', marginTop: 0,
           }}
         >
-          ログイン画面へ戻る
+          別のアドレスで登録し直す
         </button>
       </Paper>
     );
