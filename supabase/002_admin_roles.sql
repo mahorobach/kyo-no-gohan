@@ -1,19 +1,10 @@
 -- ============================================================
--- profiles テーブル
--- ユーザーのプラン（free / tester / paid）を管理する
--- 管理者メール: dokakao@gmail.com
+-- 管理者権限
+-- 既存の profiles テーブルに is_admin を追加し、管理画面から変更できるようにする
 -- ============================================================
 
-create table if not exists profiles (
-  user_id      uuid primary key references auth.users on delete cascade,
-  email        text,
-  display_name text not null default 'さくらこ',
-  plan         text not null default 'free'
-                 check (plan in ('free', 'tester', 'paid')),
-  is_admin     boolean not null default false,
-  created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
-);
+alter table public.profiles
+  add column if not exists is_admin boolean not null default false;
 
 -- 管理者判定。初期管理者IDを残しつつ、以後は profiles.is_admin を正とする
 create or replace function public.is_profile_admin()
@@ -68,22 +59,23 @@ begin
 end;
 $$;
 
--- RLS 有効化
-alter table profiles enable row level security;
+drop policy if exists "profiles_select" on public.profiles;
+drop policy if exists "profiles_insert" on public.profiles;
+drop policy if exists "profiles_update" on public.profiles;
 
 -- 自分のレコードを参照（+ 管理者は全件参照）
-create policy "profiles_select" on profiles
+create policy "profiles_select" on public.profiles
   for select using (
     auth.uid() = user_id
     or public.is_profile_admin()
   );
 
 -- 自分のレコードのみ挿入
-create policy "profiles_insert" on profiles
+create policy "profiles_insert" on public.profiles
   for insert with check (auth.uid() = user_id);
 
 -- 自分のレコードを更新（+ 管理者は全件更新）
-create policy "profiles_update" on profiles
+create policy "profiles_update" on public.profiles
   for update using (
     auth.uid() = user_id
     or public.is_profile_admin()

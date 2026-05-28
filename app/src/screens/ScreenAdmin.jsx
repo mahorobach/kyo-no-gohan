@@ -3,7 +3,7 @@ import { T, FONT } from '../tokens';
 import Paper from '../components/Paper';
 import Tag from '../components/Tag';
 import NavBack from '../components/NavBack';
-import { fetchAllProfiles, upsertProfile } from '../lib/supabase';
+import { fetchAllProfiles, setProfileAdmin, upsertProfile } from '../lib/supabase';
 
 const PLANS = [
   { key: 'free',   label: '無料',     tone: 'sage' },
@@ -31,13 +31,31 @@ export default function ScreenAdmin({ navigate }) {
 
   const handleChangePlan = async (userId, plan) => {
     setUpdating(userId);
+    setError(null);
     try {
       await upsertProfile(userId, { plan });
       setProfiles((current) =>
         current.map((p) => (p.user_id === userId ? { ...p, plan } : p))
       );
-    } catch {
-      // 失敗時はなにもしない（表示は元のまま）
+    } catch (updateError) {
+      console.error('プラン変更エラー', updateError);
+      setError('プランの変更に失敗しました');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleChangeAdmin = async (userId, isAdmin) => {
+    setUpdating(userId);
+    setError(null);
+    try {
+      await setProfileAdmin(userId, isAdmin);
+      setProfiles((current) =>
+        current.map((p) => (p.user_id === userId ? { ...p, is_admin: isAdmin } : p))
+      );
+    } catch (updateError) {
+      console.error('管理者権限変更エラー', updateError);
+      setError('管理者権限の変更に失敗しました');
     } finally {
       setUpdating(null);
     }
@@ -148,7 +166,10 @@ export default function ScreenAdmin({ navigate }) {
                       {user.email || user.user_id}
                     </div>
                   </div>
-                  <Tag tone={currentPlan.tone}>{currentPlan.label}</Tag>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    {user.is_admin && <Tag tone="amber">管理者</Tag>}
+                    <Tag tone={currentPlan.tone}>{currentPlan.label}</Tag>
+                  </div>
                 </div>
 
                 {/* プラン変更ボタン */}
@@ -177,6 +198,54 @@ export default function ScreenAdmin({ navigate }) {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* 管理者権限の変更 */}
+                <div style={{
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTop: `1px dashed ${T.line}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                }}>
+                  <div>
+                    <div style={{
+                      fontFamily: FONT.serif,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: T.ink,
+                    }}>
+                      管理者権限
+                    </div>
+                    <div style={{
+                      fontFamily: FONT.sans,
+                      fontSize: 10,
+                      color: T.inkMuted,
+                      marginTop: 2,
+                    }}>
+                      管理画面への入室を許可します
+                    </div>
+                  </div>
+                  <button
+                    disabled={isUpdating}
+                    onClick={() => handleChangeAdmin(user.user_id, !user.is_admin)}
+                    style={{
+                      width: 104,
+                      height: 34,
+                      borderRadius: 10,
+                      border: `1px solid ${user.is_admin ? T.terracotta : T.line}`,
+                      background: user.is_admin ? T.terracottaTint : T.bg,
+                      color: user.is_admin ? T.terracottaDeep : T.inkSoft,
+                      fontFamily: FONT.sans,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: isUpdating ? 'default' : 'pointer',
+                    }}
+                  >
+                    {user.is_admin ? '解除する' : '管理者にする'}
+                  </button>
                 </div>
 
                 {/* 登録日 */}

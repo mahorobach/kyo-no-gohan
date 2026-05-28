@@ -29,6 +29,11 @@ const PAID_DAILY_GENERATION_LIMIT = 10;
 const ADMIN_EMAIL = 'dokakao@gmail.com';
 const ADMIN_USER_ID = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4';
 
+const isAdminUser = (user) => {
+  const email = user?.email ?? user?.user_metadata?.email ?? '';
+  return email.toLowerCase() === ADMIN_EMAIL || user?.id === ADMIN_USER_ID;
+};
+
 const normalizeTitle = (title = '') => title.replace(/\s+/g, '').trim();
 
 const MOCK_PHOTO_BATCHES = [
@@ -403,6 +408,9 @@ export default function App() {
     if (!user || !isSupabaseConfigured) return;
 
     const syncProfile = async () => {
+      const fallbackIsAdmin = isAdminUser(user);
+      setIsAdminFromDb(fallbackIsAdmin);
+
       try {
         const supabaseProfile = await fetchProfile(user.id);
         if (supabaseProfile) {
@@ -411,7 +419,7 @@ export default function App() {
             ...current,
             plan: supabaseProfile.plan ?? 'free',
           }));
-          setIsAdminFromDb(supabaseProfile.is_admin === true);
+          setIsAdminFromDb(supabaseProfile.is_admin === true || fallbackIsAdmin);
         } else {
           // 初回ログイン → localStorage のプランで Supabase にプロフィールを作成
           const local = loadProfile();
@@ -424,6 +432,7 @@ export default function App() {
               ?? resolvedEmail.split('@')[0]
               ?? 'さくらこ',
             plan: local.plan ?? 'free',
+            is_admin: fallbackIsAdmin,
           });
         }
       } catch (err) {
@@ -444,7 +453,7 @@ export default function App() {
     limit: dailyGenerationLimit,
     remaining: isTester ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
   };
-  const isAdmin = isAdminFromDb;
+  const isAdmin = isAdminFromDb || isAdminUser(user);
 
   const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
     if (!nextRecipes.length) return;

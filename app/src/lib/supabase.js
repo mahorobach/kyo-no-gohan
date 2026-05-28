@@ -53,3 +53,13 @@ export const fetchAllProfiles = async () => {
   if (error) throw error;
   return data ?? [];
 };
+
+// 管理者フラグを変更（管理者のみ RPC で許可）
+export const setProfileAdmin = async (userId, isAdmin) => {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('set_profile_admin', {
+    target_user_id: userId,
+    next_is_admin: isAdmin,
+  });
+  if (error) throw error;
+};
