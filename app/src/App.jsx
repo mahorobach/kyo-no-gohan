@@ -27,9 +27,9 @@ const GENERATION_USAGE_STORAGE_KEY = 'kyou-no-gohan:generation-usage';
 const FREE_DAILY_GENERATION_LIMIT = 3;
 const PAID_DAILY_GENERATION_LIMIT = 10;
 const ADMIN_EMAIL = 'dokakao@gmail.com';
+const ADMIN_EMAILS = [ADMIN_EMAIL, 'dokakao@yahoo.co.jp'];
 const ADMIN_USER_ID = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4';
-const ADMIN_DISPLAY_NAME = 'dokakao';
-const APP_VERSION = '2026.05.29.2';
+const APP_VERSION = '2026.05.29.3';
 
 const isAdminUser = (user) => {
   const emails = [
@@ -39,12 +39,8 @@ const isAdminUser = (user) => {
   ];
 
   return user?.id === ADMIN_USER_ID
-    || emails.some((email) => String(email ?? '').trim().toLowerCase() === ADMIN_EMAIL);
+    || emails.some((email) => ADMIN_EMAILS.includes(String(email ?? '').trim().toLowerCase()));
 };
-
-const isAdminDisplayName = (name = '') => (
-  name.trim().toLowerCase() === ADMIN_DISPLAY_NAME
-);
 
 const normalizeTitle = (title = '') => title.replace(/\s+/g, '').trim();
 
@@ -428,8 +424,7 @@ export default function App() {
         if (supabaseProfile) {
           // Supabase にプロフィールがある → プランと管理者フラグを state に反映
           const profileIsAdmin = supabaseProfile.is_admin === true
-            || String(supabaseProfile.email ?? '').trim().toLowerCase() === ADMIN_EMAIL
-            || isAdminDisplayName(supabaseProfile.display_name);
+            || ADMIN_EMAILS.includes(String(supabaseProfile.email ?? '').trim().toLowerCase());
 
           setProfile((current) => ({
             ...current,
@@ -469,11 +464,7 @@ export default function App() {
     limit: dailyGenerationLimit,
     remaining: isTester ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
   };
-  const currentDisplayName = user?.user_metadata?.full_name
-    ?? user?.user_metadata?.name
-    ?? user?.email?.split('@')[0]
-    ?? profile.name;
-  const isAdmin = isAdminFromDb || isAdminUser(user) || isAdminDisplayName(currentDisplayName);
+  const isAdmin = isAdminFromDb || isAdminUser(user);
 
   const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
     if (!nextRecipes.length) return;

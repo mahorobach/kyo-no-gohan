@@ -43,13 +43,10 @@ export const upsertProfile = async (userId, fields) => {
   if (error) throw error;
 };
 
-// 全ユーザーのプロフィールを取得（管理者のみ RLS で許可）
+// 全ユーザーのプロフィールを取得（管理者のみ RPC で Auth ユーザーも同期）
 export const fetchAllProfiles = async () => {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('list_profiles_for_admin');
   if (error) throw error;
   return data ?? [];
 };

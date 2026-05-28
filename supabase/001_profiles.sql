@@ -25,7 +25,7 @@ stable
 as $$
   select
     auth.uid() = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4'::uuid
-    or auth.email() = 'dokakao@gmail.com'
+    or auth.email() in ('dokakao@gmail.com', 'dokakao@yahoo.co.jp')
     or exists (
       select 1
       from public.profiles
@@ -68,6 +68,62 @@ begin
 end;
 $$;
 
+-- 管理者用: Auth登録済みユーザーを profiles に同期して一覧を返す
+create or replace function public.list_profiles_for_admin()
+returns table (
+  user_id uuid,
+  email text,
+  display_name text,
+  plan text,
+  is_admin boolean,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if not public.is_profile_admin() then
+    raise exception '管理者権限がありません';
+  end if;
+
+  insert into public.profiles (user_id, email, display_name, plan, is_admin, created_at, updated_at)
+  select
+    users.id,
+    users.email,
+    coalesce(
+      users.raw_user_meta_data->>'full_name',
+      users.raw_user_meta_data->>'name',
+      split_part(users.email, '@', 1),
+      'さくらこ'
+    ),
+    'free',
+    users.id = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4'::uuid
+      or users.email in ('dokakao@gmail.com', 'dokakao@yahoo.co.jp'),
+    users.created_at,
+    now()
+  from auth.users
+  where not exists (
+    select 1
+    from public.profiles
+    where profiles.user_id = users.id
+  );
+
+  return query
+  select
+    profiles.user_id,
+    profiles.email,
+    profiles.display_name,
+    profiles.plan,
+    profiles.is_admin,
+    profiles.created_at,
+    profiles.updated_at
+  from public.profiles
+  order by profiles.created_at desc;
+end;
+$$;
+
 -- RLS 有効化
 alter table profiles enable row level security;
 
@@ -96,9 +152,10 @@ create policy "profiles_update" on profiles
 revoke update on public.profiles from anon, authenticated;
 grant update (user_id, email, display_name, plan, updated_at) on public.profiles to authenticated;
 grant execute on function public.set_profile_admin(uuid, boolean) to authenticated;
+grant execute on function public.list_profiles_for_admin() to authenticated;
 
 -- 初期管理者
 update public.profiles
 set is_admin = true
 where user_id = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4'::uuid
-   or email = 'dokakao@gmail.com';
+   or email in ('dokakao@gmail.com', 'dokakao@yahoo.co.jp');
