@@ -1,16 +1,26 @@
 // 認証状態をアプリ全体で共有するコンテキスト
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import AuthContext from './AuthContext';
 
 const getAuthRedirectUrl = () => window.location.origin;
+const authConfigError = new Error('Supabase の環境変数が設定されていません');
+
+const ensureSupabase = () => {
+  if (!isSupabaseConfigured || !supabase) throw authConfigError;
+  return supabase;
+};
 
 export function AuthProvider({ children }) {
   // null = 読み込み中, false = 未ログイン, object = ログイン済み
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => (isSupabaseConfigured ? null : false));
+  const [loading, setLoading] = useState(() => isSupabaseConfigured);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      return undefined;
+    }
+
     // onAuthStateChange を先に登録してから getSession を呼ぶ
     // （リダイレクト後の SIGNED_IN イベントを取りこぼさないため）
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -29,7 +39,8 @@ export function AuthProvider({ children }) {
 
   // Google ログイン
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const client = ensureSupabase();
+    const { error } = await client.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
@@ -40,13 +51,15 @@ export function AuthProvider({ children }) {
 
   // メール/パスワードでログイン
   const signInWithEmail = async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const client = ensureSupabase();
+    const { error } = await client.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
   // メール/パスワードで新規登録（確認メール送信）
   const signUpWithEmail = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({
+    const client = ensureSupabase();
+    const { data, error } = await client.auth.signUp({
       email,
       password,
       options: {
@@ -63,7 +76,8 @@ export function AuthProvider({ children }) {
 
   // 確認メールを再送する
   const resendConfirmationEmail = async (email) => {
-    const { error } = await supabase.auth.resend({
+    const client = ensureSupabase();
+    const { error } = await client.auth.resend({
       type: 'signup',
       email,
       options: {
@@ -75,7 +89,8 @@ export function AuthProvider({ children }) {
 
   // ログアウト
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
+    const client = ensureSupabase();
+    const { error } = await client.auth.signOut();
     if (error) throw error;
   };
 

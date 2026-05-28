@@ -41,6 +41,15 @@ GEMINI_API_KEY=your_google_ai_studio_api_key
 
 `VITE_GEMINI_API_KEY` は使用しません。Gemini APIキーは Pages Functions の `/api/recipes` だけで読み込みます。
 
+Supabase Auth を使うため、Cloudflare Pages の環境変数に以下も設定します。
+
+```text
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+`VITE_` 付きの値はブラウザ側に埋め込まれます。Supabase の anon key だけを設定し、service role key は設定しません。
+
 ## デプロイ予定
 
 - Custom domain: `recipes.eatease.net`

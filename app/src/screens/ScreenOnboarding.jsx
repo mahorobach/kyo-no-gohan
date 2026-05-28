@@ -49,6 +49,7 @@ function toJapaneseError(msg = '') {
   if (msg.includes('User already registered')) return 'このメールアドレスはすでに登録されています';
   if (msg.includes('Password should be at least')) return 'パスワードは6文字以上にしてください';
   if (msg.includes('Unable to validate email')) return 'メールアドレスの形式が正しくありません';
+  if (msg.includes('Supabase の環境変数')) return 'ログイン設定がまだ完了していません。管理者に確認してください';
   return 'エラーが発生しました。もう一度お試しください';
 }
 
@@ -112,8 +113,10 @@ export default function ScreenOnboarding() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+      setError(null);
       await signInWithGoogle();
-    } catch {
+    } catch (err) {
+      setError(toJapaneseError(err?.message));
       setLoading(false);
     }
   };
