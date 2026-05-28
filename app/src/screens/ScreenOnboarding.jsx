@@ -128,8 +128,14 @@ export default function ScreenOnboarding() {
       setLoading(true);
       setError(null);
       if (isSignup) {
-        // 登録完了後は onAuthStateChange が自動でログイン処理する
-        await signUpWithEmail(email.trim(), password);
+        const data = await signUpWithEmail(email.trim(), password);
+        // セッションなし = Supabase側でまだメール確認が必要な設定になっている
+        // ローディングを解除してユーザーに案内する
+        if (!data.session) {
+          setLoading(false);
+          setError('確認メールを送りました。メール内のリンクをクリックして登録を完了してください。\nメールが届かない場合はしばらく待ってから再度お試しください。');
+        }
+        // セッションあり → onAuthStateChange が自動でホーム画面へ遷移する
       } else {
         await signInWithEmail(email.trim(), password);
       }
