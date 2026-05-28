@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ScreenOnboarding from './screens/ScreenOnboarding';
+import ScreenPasswordReset from './screens/ScreenPasswordReset';
 import HomeA from './screens/HomeA';
 import ScreenCamera from './screens/ScreenCamera';
 import ScreenAnalyzing from './screens/ScreenAnalyzing';
@@ -334,7 +335,7 @@ const SCREENS = {
 };
 
 export default function App() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, needsPasswordReset, signOut } = useAuth();
   const [screen, setScreen] = useState('onboarding');
   const [recipes, setRecipes] = useState(null);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
@@ -716,8 +717,15 @@ export default function App() {
         </div>
       )}
 
-      {/* ログイン済み → 通常のアプリ */}
-      {!authLoading && user && (
+      {/* パスワードリセットリンクからの遷移 → 新パスワード設定画面 */}
+      {!authLoading && user && needsPasswordReset && (
+        <div style={phoneShell}>
+          <ScreenPasswordReset />
+        </div>
+      )}
+
+      {/* ログイン済み（通常） → 通常のアプリ */}
+      {!authLoading && user && !needsPasswordReset && (
         <div style={phoneShell}>
           <CurrentScreen
             navigate={navigate}

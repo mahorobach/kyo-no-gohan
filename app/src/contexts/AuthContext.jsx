@@ -15,6 +15,8 @@ export function AuthProvider({ children }) {
   // null = 読み込み中, false = 未ログイン, object = ログイン済み
   const [user, setUser] = useState(() => (isSupabaseConfigured ? null : false));
   const [loading, setLoading] = useState(() => isSupabaseConfigured);
+  // パスワードリセットリンクからの遷移かどうか
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
@@ -23,7 +25,11 @@ export function AuthProvider({ children }) {
 
     // onAuthStateChange を先に登録してから getSession を呼ぶ
     // （リダイレクト後の SIGNED_IN イベントを取りこぼさないため）
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // パスワードリセットメールのリンクを踏んだ場合
+      if (event === 'PASSWORD_RECOVERY') {
+        setNeedsPasswordReset(true);
+      }
       setUser(session?.user ?? false);
       setLoading(false);
     });
@@ -87,6 +93,23 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  // パスワードリセットメールを送る
+  const sendPasswordResetEmail = async (email) => {
+    const client = ensureSupabase();
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: getAuthRedirectUrl(),
+    });
+    if (error) throw error;
+  };
+
+  // 新しいパスワードに更新する（リセットリンクからの遷移後）
+  const updatePassword = async (newPassword) => {
+    const client = ensureSupabase();
+    const { error } = await client.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    setNeedsPasswordReset(false);
+  };
+
   // ログアウト
   const signOut = async () => {
     const client = ensureSupabase();
@@ -95,7 +118,11 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmationEmail, signOut }}>
+    <AuthContext.Provider value={{
+      user, loading, needsPasswordReset,
+      signInWithGoogle, signInWithEmail, signUpWithEmail,
+      resendConfirmationEmail, sendPasswordResetEmail, updatePassword, signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );

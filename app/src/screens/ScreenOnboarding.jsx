@@ -99,8 +99,8 @@ function TopDecoration() {
 }
 
 export default function ScreenOnboarding() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmationEmail } = useAuth();
-  // モード: 'default' | 'choice' | 'email'
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmationEmail, sendPasswordResetEmail } = useAuth();
+  // モード: 'default' | 'choice' | 'email' | 'reset' | 'resetDone'
   const [mode, setMode] = useState('default');
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
@@ -152,7 +152,31 @@ export default function ScreenOnboarding() {
 
   const goToChoice = () => { setMode('choice'); setError(null); };
   const goToEmail  = () => { setIsSignup(true); setMode('email'); setError(null); };
-  const goBack     = () => { setMode((m) => m === 'email' ? 'choice' : 'default'); setError(null); };
+  const goToReset  = () => { setMode('reset'); setError(null); };
+  const goBack     = () => {
+    setError(null);
+    if (mode === 'email') return setMode('choice');
+    if (mode === 'reset') return setMode('email');
+    setMode('default');
+  };
+
+  // パスワードリセットメール送信
+  const handleResetSubmit = async () => {
+    if (!email.trim()) {
+      setError('メールアドレスを入力してください');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      await sendPasswordResetEmail(email.trim());
+      setMode('resetDone');
+    } catch (err) {
+      setError(toJapaneseError(err?.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleResend = async () => {
     try {
@@ -435,11 +459,24 @@ export default function ScreenOnboarding() {
                 type="password"
                 placeholder={isSignup ? 'パスワード（6文字以上）' : 'パスワード'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => e.key === 'Enter' ? handleEmailSubmit() : setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
                 style={inputStyle}
                 autoComplete={isSignup ? 'new-password' : 'current-password'}
               />
+              {/* パスワードを忘れた方（ログインタブのみ表示） */}
+              {!isSignup && (
+                <button
+                  onClick={goToReset}
+                  style={{
+                    alignSelf: 'flex-end',
+                    fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  }}
+                >
+                  パスワードを忘れた方
+                </button>
+              )}
             </div>
 
             {/* エラーメッセージ */}
@@ -461,6 +498,109 @@ export default function ScreenOnboarding() {
               </Btn>
             </div>
           </>
+        )}
+
+        {/* ── パスワードリセット送信フォーム ── */}
+        {mode === 'reset' && (
+          <>
+            {/* ヘッダー */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button
+                onClick={goBack}
+                aria-label="戻る"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: T.inkMuted, fontSize: 20, padding: '0 4px 0 0', lineHeight: 1,
+                }}
+              >
+                &#8592;
+              </button>
+              <Logo size={18} />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <div style={{ fontFamily: FONT.serif, fontSize: 20, fontWeight: 600, color: T.ink }}>
+                パスワードをリセット
+              </div>
+              <div style={{
+                fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
+                marginTop: 8, lineHeight: 1.7,
+              }}>
+                登録したメールアドレスを入力してください。<br />
+                パスワード再設定用のリンクをお送りします。
+              </div>
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              <input
+                type="email"
+                placeholder="メールアドレス"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleResetSubmit()}
+                style={inputStyle}
+                autoComplete="email"
+              />
+            </div>
+
+            {error && (
+              <div style={{
+                marginTop: 10, padding: '10px 14px', borderRadius: 10,
+                background: T.terracottaTint,
+                fontFamily: FONT.sans, fontSize: 12, color: T.terracottaDeep,
+                lineHeight: 1.6,
+              }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ marginTop: 'auto' }}>
+              <Btn kind="accent" full onClick={handleResetSubmit} disabled={loading}>
+                {loading ? '送信中…' : 'リセットメールを送る'}
+              </Btn>
+            </div>
+          </>
+        )}
+
+        {/* ── パスワードリセットメール送信完了 ── */}
+        {mode === 'resetDone' && (
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 14, textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 44, lineHeight: 1 }}>&#128140;</div>
+            <div style={{
+              fontFamily: FONT.serif, fontSize: 20, fontWeight: 600, color: T.ink,
+            }}>
+              リセットメールを送りました
+            </div>
+            <div style={{
+              fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft, lineHeight: 1.8,
+            }}>
+              <span style={{ fontWeight: 600 }}>{email}</span> に<br />
+              パスワード再設定リンクをお送りしました。<br />
+              メール内のリンクをタップしてください。
+            </div>
+            <div style={{
+              background: T.amberTint, border: `1px solid ${T.amber}55`,
+              borderRadius: 10, padding: '10px 16px',
+              fontFamily: FONT.sans, fontSize: 12, color: T.inkSoft,
+              textAlign: 'left', lineHeight: 1.8, width: '100%',
+            }}>
+              <div style={{ fontWeight: 600, color: T.ink, marginBottom: 4 }}>届かない場合</div>
+              <div>・迷惑メール・スパムフォルダを確認</div>
+              <div>・数分待ってから再度お試しください</div>
+            </div>
+            <button
+              onClick={() => { setMode('email'); setIsSignup(false); setError(null); }}
+              style={{
+                fontFamily: FONT.sans, fontSize: 13, color: T.terracotta,
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
+              ログイン画面へ戻る
+            </button>
+          </div>
         )}
 
       </div>
