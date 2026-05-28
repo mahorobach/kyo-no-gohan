@@ -99,7 +99,7 @@ function TopDecoration() {
 }
 
 export default function ScreenOnboarding() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordResetEmail } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmationEmail, sendPasswordResetEmail } = useAuth();
   // モード: 'default' | 'choice' | 'email' | 'reset' | 'resetDone'
   const [mode, setMode] = useState('default');
   const [loading, setLoading] = useState(false);
@@ -107,6 +107,8 @@ export default function ScreenOnboarding() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [signupDone, setSignupDone] = useState(false);
+  const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
 
   const handleGoogleLogin = async () => {
     try {
@@ -129,11 +131,9 @@ export default function ScreenOnboarding() {
       setError(null);
       if (isSignup) {
         const data = await signUpWithEmail(email.trim(), password);
-        // セッションなし = Supabase側でまだメール確認が必要な設定になっている
-        // ローディングを解除してユーザーに案内する
         if (!data.session) {
-          setLoading(false);
-          setError('確認メールを送りました。メール内のリンクをクリックして登録を完了してください。\nメールが届かない場合はしばらく待ってから再度お試しください。');
+          // メール確認が必要 → 確認メール送信完了画面を表示
+          setSignupDone(true);
         }
         // セッションあり → onAuthStateChange が自動でホーム画面へ遷移する
       } else {
@@ -150,6 +150,68 @@ export default function ScreenOnboarding() {
       setLoading(false);
     }
   };
+
+  // 確認メール再送
+  const handleResend = async () => {
+    try {
+      setResendStatus('sending');
+      await resendConfirmationEmail(email);
+      setResendStatus('sent');
+    } catch {
+      setResendStatus('error');
+    }
+  };
+
+  // 確認メール送信完了画面
+  if (signupDone) {
+    return (
+      <Paper color={T.bg} style={{
+        position: 'relative', width: '100%', height: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexDirection: 'column', padding: '0 28px', gap: 16,
+      }}>
+        <div style={{ fontSize: 48, lineHeight: 1 }}>&#128236;</div>
+        <div style={{
+          fontFamily: FONT.serif, fontSize: 22, fontWeight: 600,
+          color: T.ink, textAlign: 'center', marginTop: 4,
+        }}>
+          確認メールを送りました
+        </div>
+        <div style={{
+          fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft,
+          textAlign: 'center', lineHeight: 1.8,
+        }}>
+          <span style={{ fontWeight: 600 }}>{email}</span> に<br />
+          確認メールをお送りしました。<br />
+          メール内のリンクをクリックして<br />登録を完了してください。
+        </div>
+        <button
+          onClick={handleResend}
+          disabled={resendStatus === 'sending' || resendStatus === 'sent'}
+          style={{
+            fontFamily: FONT.sans, fontSize: 13,
+            color: resendStatus === 'sent' ? T.sageDeep : T.terracotta,
+            background: 'none', border: 'none',
+            cursor: resendStatus === 'sent' ? 'default' : 'pointer',
+          }}
+        >
+          {resendStatus === 'sending' && '送信中…'}
+          {resendStatus === 'sent' && '再送しました'}
+          {resendStatus === 'error' && '再送に失敗しました'}
+          {!resendStatus && 'メールを再送する'}
+        </button>
+        <button
+          onClick={() => { setSignupDone(false); setIsSignup(true); setMode('email'); setResendStatus(null); }}
+          style={{
+            fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
+            background: 'none', border: 'none', cursor: 'pointer',
+          }}
+        >
+          別のアドレスで登録し直す
+        </button>
+      </Paper>
+    );
+  }
 
   const goToChoice = () => { setMode('choice'); setError(null); };
   const goToEmail  = () => { setIsSignup(true); setMode('email'); setError(null); };
