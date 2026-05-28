@@ -99,7 +99,7 @@ function TopDecoration() {
 }
 
 export default function ScreenOnboarding() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmationEmail, sendPasswordResetEmail } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordResetEmail } = useAuth();
   // モード: 'default' | 'choice' | 'email' | 'reset' | 'resetDone'
   const [mode, setMode] = useState('default');
   const [loading, setLoading] = useState(false);
@@ -107,8 +107,6 @@ export default function ScreenOnboarding() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const [signupDone, setSignupDone] = useState(false);
-  const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
 
   const handleGoogleLogin = async () => {
     try {
@@ -130,11 +128,8 @@ export default function ScreenOnboarding() {
       setLoading(true);
       setError(null);
       if (isSignup) {
-        const data = await signUpWithEmail(email.trim(), password);
-        // メール確認が有効な場合だけ確認メール案内を表示する
-        if (!data.session) {
-          setSignupDone(true);
-        }
+        // 登録完了後は onAuthStateChange が自動でログイン処理する
+        await signUpWithEmail(email.trim(), password);
       } else {
         await signInWithEmail(email.trim(), password);
       }
@@ -178,85 +173,6 @@ export default function ScreenOnboarding() {
     }
   };
 
-  const handleResend = async () => {
-    try {
-      setResendStatus('sending');
-      await resendConfirmationEmail(email);
-      setResendStatus('sent');
-    } catch {
-      setResendStatus('error');
-    }
-  };
-
-  // 登録完了（確認メール送信済み）画面
-  if (signupDone) {
-    return (
-      <Paper color={T.bg} style={{
-        position: 'relative', width: '100%', height: '100%',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', padding: '0 28px', gap: 16,
-      }}>
-        <div style={{ fontSize: 48, lineHeight: 1 }}>&#128236;</div>
-        <div style={{
-          fontFamily: FONT.serif, fontSize: 22, fontWeight: 600,
-          color: T.ink, textAlign: 'center', marginTop: 4,
-        }}>
-          確認メールを送りました
-        </div>
-        <div style={{
-          fontFamily: FONT.sans, fontSize: 13, color: T.inkSoft,
-          textAlign: 'center', lineHeight: 1.8,
-        }}>
-          <span style={{ fontWeight: 600 }}>{email}</span> に確認メールを<br />
-          お送りしました。<br />
-          メール内のリンクをクリックして<br />登録を完了してください。
-        </div>
-
-        {/* スパムフォルダの案内 */}
-        <div style={{
-          background: T.amberTint,
-          border: `1px solid ${T.amber}55`,
-          borderRadius: 10,
-          padding: '10px 16px',
-          fontFamily: FONT.sans, fontSize: 12, color: T.inkSoft,
-          textAlign: 'left', lineHeight: 1.8, width: '100%',
-        }}>
-          <div style={{ fontWeight: 600, color: T.ink, marginBottom: 4 }}>届かない場合の確認事項</div>
-          <div>・迷惑メール・スパムフォルダを確認</div>
-          <div>・iCloud メールは届きにくい場合あり</div>
-          <div>・Gmail など別アドレスで試してみる</div>
-        </div>
-
-        {/* 再送ボタン */}
-        <button
-          onClick={handleResend}
-          disabled={resendStatus === 'sending' || resendStatus === 'sent'}
-          style={{
-            fontFamily: FONT.sans, fontSize: 13,
-            color: resendStatus === 'sent' ? T.sageDeep : T.terracotta,
-            background: 'none', border: 'none',
-            cursor: resendStatus === 'sent' ? 'default' : 'pointer',
-            marginTop: 0,
-          }}
-        >
-          {resendStatus === 'sending' && '送信中…'}
-          {resendStatus === 'sent' && '再送しました（数分お待ちください）'}
-          {resendStatus === 'error' && '再送に失敗しました。時間をおいて試してください'}
-          {!resendStatus && 'メールを再送する'}
-        </button>
-
-        <button
-          onClick={() => { setSignupDone(false); setIsSignup(true); setMode('email'); setResendStatus(null); }}
-          style={{
-            fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
-            background: 'none', border: 'none', cursor: 'pointer', marginTop: 0,
-          }}
-        >
-          別のアドレスで登録し直す
-        </button>
-      </Paper>
-    );
-  }
 
   return (
     <Paper color={T.bg} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>

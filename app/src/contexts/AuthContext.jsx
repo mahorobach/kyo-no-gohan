@@ -80,19 +80,6 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  // 確認メールを再送する
-  const resendConfirmationEmail = async (email) => {
-    const client = ensureSupabase();
-    const { error } = await client.auth.resend({
-      type: 'signup',
-      email,
-      options: {
-        emailRedirectTo: getAuthRedirectUrl(),
-      },
-    });
-    if (error) throw error;
-  };
-
   // パスワードリセットメールを送る
   const sendPasswordResetEmail = async (email) => {
     const client = ensureSupabase();
@@ -121,7 +108,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user, loading, needsPasswordReset,
       signInWithGoogle, signInWithEmail, signUpWithEmail,
-      resendConfirmationEmail, sendPasswordResetEmail, updatePassword, signOut,
+      sendPasswordResetEmail, updatePassword, signOut,
     }}>
       {children}
     </AuthContext.Provider>
