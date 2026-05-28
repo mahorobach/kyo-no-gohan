@@ -28,7 +28,8 @@ const FREE_DAILY_GENERATION_LIMIT = 3;
 const PAID_DAILY_GENERATION_LIMIT = 10;
 const ADMIN_EMAIL = 'dokakao@gmail.com';
 const ADMIN_USER_ID = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4';
-const APP_VERSION = '2026.05.29.1';
+const ADMIN_DISPLAY_NAME = 'dokakao';
+const APP_VERSION = '2026.05.29.2';
 
 const isAdminUser = (user) => {
   const emails = [
@@ -40,6 +41,10 @@ const isAdminUser = (user) => {
   return user?.id === ADMIN_USER_ID
     || emails.some((email) => String(email ?? '').trim().toLowerCase() === ADMIN_EMAIL);
 };
+
+const isAdminDisplayName = (name = '') => (
+  name.trim().toLowerCase() === ADMIN_DISPLAY_NAME
+);
 
 const normalizeTitle = (title = '') => title.replace(/\s+/g, '').trim();
 
@@ -422,11 +427,15 @@ export default function App() {
         const supabaseProfile = await fetchProfile(user.id);
         if (supabaseProfile) {
           // Supabase にプロフィールがある → プランと管理者フラグを state に反映
+          const profileIsAdmin = supabaseProfile.is_admin === true
+            || String(supabaseProfile.email ?? '').trim().toLowerCase() === ADMIN_EMAIL
+            || isAdminDisplayName(supabaseProfile.display_name);
+
           setProfile((current) => ({
             ...current,
             plan: supabaseProfile.plan ?? 'free',
           }));
-          setIsAdminFromDb(supabaseProfile.is_admin === true || fallbackIsAdmin);
+          setIsAdminFromDb(profileIsAdmin || fallbackIsAdmin);
         } else {
           // 初回ログイン → localStorage のプランで Supabase にプロフィールを作成
           const local = loadProfile();
@@ -460,7 +469,11 @@ export default function App() {
     limit: dailyGenerationLimit,
     remaining: isTester ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
   };
-  const isAdmin = isAdminFromDb || isAdminUser(user);
+  const currentDisplayName = user?.user_metadata?.full_name
+    ?? user?.user_metadata?.name
+    ?? user?.email?.split('@')[0]
+    ?? profile.name;
+  const isAdmin = isAdminFromDb || isAdminUser(user) || isAdminDisplayName(currentDisplayName);
 
   const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
     if (!nextRecipes.length) return;
