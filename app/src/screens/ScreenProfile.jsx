@@ -164,6 +164,30 @@ export default function ScreenProfile({
           )}
         </div>
 
+        {/* 管理画面ボタン（管理者のみ表示） */}
+        {isAdmin && (
+          <div style={{ padding: '16px 22px 0' }}>
+            <button
+              onClick={() => navigate('admin')}
+              style={{
+                width: '100%',
+                height: 46,
+                borderRadius: 16,
+                border: `1px solid ${T.terracotta}`,
+                background: T.terracottaTint,
+                color: T.terracottaDeep,
+                fontFamily: FONT.sans,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                letterSpacing: '0.06em',
+              }}
+            >
+              管理画面
+            </button>
+          </div>
+        )}
+
         <div style={{ padding: '22px 22px 0' }}>
           <div style={{
             background: T.surface,
@@ -295,30 +319,6 @@ export default function ScreenProfile({
             友人レビュー中です。レシピの自然さ、材料の使い方、毎日使いたくなるかを見てもらう段階です。
           </div>
         </div>
-
-        {/* 管理画面ボタン（管理者のみ表示） */}
-        {isAdmin && (
-          <div style={{ padding: '16px 22px 0' }}>
-            <button
-              onClick={() => navigate('admin')}
-              style={{
-                width: '100%',
-                height: 46,
-                borderRadius: 16,
-                border: `1px solid ${T.terracotta}`,
-                background: T.terracottaTint,
-                color: T.terracottaDeep,
-                fontFamily: FONT.sans,
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-                letterSpacing: '0.06em',
-              }}
-            >
-              管理画面
-            </button>
-          </div>
-        )}
 
         {/* ログアウトボタン */}
         {onSignOut && (

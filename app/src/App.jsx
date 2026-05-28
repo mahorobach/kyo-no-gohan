@@ -30,8 +30,14 @@ const ADMIN_EMAIL = 'dokakao@gmail.com';
 const ADMIN_USER_ID = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4';
 
 const isAdminUser = (user) => {
-  const email = user?.email ?? user?.user_metadata?.email ?? '';
-  return email.toLowerCase() === ADMIN_EMAIL || user?.id === ADMIN_USER_ID;
+  const emails = [
+    user?.email,
+    user?.user_metadata?.email,
+    ...(user?.identities ?? []).map((identity) => identity?.identity_data?.email),
+  ];
+
+  return user?.id === ADMIN_USER_ID
+    || emails.some((email) => String(email ?? '').trim().toLowerCase() === ADMIN_EMAIL);
 };
 
 const normalizeTitle = (title = '') => title.replace(/\s+/g, '').trim();
