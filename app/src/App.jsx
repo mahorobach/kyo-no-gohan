@@ -412,12 +412,13 @@ export default function App() {
         } else {
           // 初回ログイン → localStorage のプランで Supabase にプロフィールを作成
           const local = loadProfile();
+          const resolvedEmail = user.email ?? user.user_metadata?.email ?? '';
           await upsertProfile(user.id, {
-            email: user.email,
+            email: resolvedEmail,
             display_name:
               user.user_metadata?.full_name
               ?? user.user_metadata?.name
-              ?? user.email?.split('@')[0]
+              ?? resolvedEmail.split('@')[0]
               ?? 'さくらこ',
             plan: local.plan ?? 'free',
           });
@@ -440,7 +441,8 @@ export default function App() {
     limit: dailyGenerationLimit,
     remaining: isTester ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
   };
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const userEmail = user?.email ?? user?.user_metadata?.email ?? '';
+  const isAdmin = userEmail === ADMIN_EMAIL;
 
   const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
     if (!nextRecipes.length) return;
