@@ -344,6 +344,7 @@ const SCREENS = {
 export default function App() {
   const { user, loading: authLoading, needsPasswordReset, signOut } = useAuth();
   const [screen, setScreen] = useState('onboarding');
+  const [isAdminFromDb, setIsAdminFromDb] = useState(false);
   const [recipes, setRecipes] = useState(null);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -405,11 +406,12 @@ export default function App() {
       try {
         const supabaseProfile = await fetchProfile(user.id);
         if (supabaseProfile) {
-          // Supabase にプロフィールがある → プランを state に反映
+          // Supabase にプロフィールがある → プランと管理者フラグを state に反映
           setProfile((current) => ({
             ...current,
             plan: supabaseProfile.plan ?? 'free',
           }));
+          setIsAdminFromDb(supabaseProfile.is_admin === true);
         } else {
           // 初回ログイン → localStorage のプランで Supabase にプロフィールを作成
           const local = loadProfile();
@@ -442,7 +444,7 @@ export default function App() {
     limit: dailyGenerationLimit,
     remaining: isTester ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
   };
-  const isAdmin = user?.id === ADMIN_USER_ID;
+  const isAdmin = isAdminFromDb;
 
   const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
     if (!nextRecipes.length) return;
