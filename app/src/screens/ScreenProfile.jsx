@@ -86,6 +86,7 @@ export default function ScreenProfile({
   generationStatus,
   completedRecipe,
   isAdmin = false,
+  appVersion = '',
   onUpdateProfile,
   onSignOut,
 }) {
@@ -330,6 +331,19 @@ export default function ScreenProfile({
             >
               ログアウト
             </Btn>
+          </div>
+        )}
+
+        {appVersion && (
+          <div style={{
+            padding: '0 22px 18px',
+            textAlign: 'center',
+            fontFamily: FONT.sans,
+            fontSize: 10,
+            color: T.inkMuted,
+            letterSpacing: '0.08em',
+          }}>
+            version {appVersion}
           </div>
         )}
       </div>

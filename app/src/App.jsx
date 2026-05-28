@@ -28,6 +28,7 @@ const FREE_DAILY_GENERATION_LIMIT = 3;
 const PAID_DAILY_GENERATION_LIMIT = 10;
 const ADMIN_EMAIL = 'dokakao@gmail.com';
 const ADMIN_USER_ID = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4';
+const APP_VERSION = '2026.05.29.1';
 
 const isAdminUser = (user) => {
   const emails = [
@@ -821,6 +822,7 @@ export default function App() {
             inputSource={inputSource}
             generationLabel={getConditionLabel(generationConditions)}
             addingRecipes={addingRecipes}
+            appVersion={APP_VERSION}
             onGenerateRecipes={handleGenerateRecipes}
             onAddRecipes={handleAddRecipes}
             onAnalyzePhoto={handleAnalyzePhoto}
