@@ -15,3 +15,41 @@ export const supabase = isSupabaseConfigured
     },
   })
   : null;
+
+// ── プロフィール操作 ──────────────────────────────────────
+
+// 自分のプロフィールを取得（未登録なら null を返す）
+export const fetchProfile = async (userId) => {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+  // PGRST116 = 行が見つからない（正常）
+  if (error && error.code !== 'PGRST116') throw error;
+  return data ?? null;
+};
+
+// プロフィールを作成または更新
+export const upsertProfile = async (userId, fields) => {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(
+      { user_id: userId, ...fields, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    );
+  if (error) throw error;
+};
+
+// 全ユーザーのプロフィールを取得（管理者のみ RLS で許可）
+export const fetchAllProfiles = async () => {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+};

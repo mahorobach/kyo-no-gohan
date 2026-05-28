@@ -15,7 +15,9 @@ import ScreenProfile from './screens/ScreenProfile';
 import { analyzeIngredientPhotos, fetchRecipes } from './lib/gemini';
 import { recipePatterns } from './data/recipePatterns';
 import useAuth from './contexts/useAuth';
+import { isSupabaseConfigured, fetchProfile, upsertProfile } from './lib/supabase';
 import { T, FONT } from './tokens';
+import ScreenAdmin from './screens/ScreenAdmin';
 
 const RECENT_GENERATION_LIMIT = 12;
 const SAVED_RECIPES_STORAGE_KEY = 'kyou-no-gohan:saved-recipes';
@@ -24,6 +26,7 @@ const GENERATIONS_STORAGE_KEY = 'kyou-no-gohan:recent-generations';
 const GENERATION_USAGE_STORAGE_KEY = 'kyou-no-gohan:generation-usage';
 const FREE_DAILY_GENERATION_LIMIT = 3;
 const PAID_DAILY_GENERATION_LIMIT = 10;
+const ADMIN_EMAIL = 'dokakao@gmail.com';
 
 const normalizeTitle = (title = '') => title.replace(/\s+/g, '').trim();
 
@@ -71,9 +74,11 @@ const getTodayKey = () => {
   return `${year}-${month}-${date}`;
 };
 
-const getGenerationLimit = (profile = {}) => (
-  profile.plan === 'paid' ? PAID_DAILY_GENERATION_LIMIT : FREE_DAILY_GENERATION_LIMIT
-);
+const getGenerationLimit = (profile = {}) => {
+  if (profile.plan === 'tester') return Infinity;
+  if (profile.plan === 'paid') return PAID_DAILY_GENERATION_LIMIT;
+  return FREE_DAILY_GENERATION_LIMIT;
+};
 
 const loadRecentGenerations = () => {
   try {
@@ -116,7 +121,7 @@ const loadProfile = () => {
     const parsed = JSON.parse(profileText);
     return {
       name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : 'さくらこ',
-      plan: parsed.plan === 'paid' ? 'paid' : 'free',
+      plan: ['free', 'paid', 'tester'].includes(parsed.plan) ? parsed.plan : 'free',
     };
   } catch (error) {
     console.error('プロフィールの読み込みに失敗しました', error);
@@ -332,6 +337,7 @@ const SCREENS = {
   cooking: ScreenCooking,
   history: ScreenHistory,
   profile: ScreenProfile,
+  admin: ScreenAdmin,
 };
 
 export default function App() {
@@ -390,13 +396,51 @@ export default function App() {
     }
   }, [generationUsage]);
 
+  // ログイン時に Supabase からプランを取得・同期する
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return;
+
+    const syncProfile = async () => {
+      try {
+        const supabaseProfile = await fetchProfile(user.id);
+        if (supabaseProfile) {
+          // Supabase にプロフィールがある → プランを state に反映
+          setProfile((current) => ({
+            ...current,
+            plan: supabaseProfile.plan ?? 'free',
+          }));
+        } else {
+          // 初回ログイン → localStorage のプランで Supabase にプロフィールを作成
+          const local = loadProfile();
+          await upsertProfile(user.id, {
+            email: user.email,
+            display_name:
+              user.user_metadata?.full_name
+              ?? user.user_metadata?.name
+              ?? user.email?.split('@')[0]
+              ?? 'さくらこ',
+            plan: local.plan ?? 'free',
+          });
+        }
+      } catch (err) {
+        console.error('プロフィール同期エラー', err);
+      }
+    };
+
+    syncProfile();
+  // user.id が変わったとき（ログイン・切替）のみ実行
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   const dailyGenerationLimit = getGenerationLimit(profile);
+  const isTester = profile.plan === 'tester';
   const generationStatus = {
-    plan: profile.plan === 'paid' ? 'paid' : 'free',
+    plan: profile.plan ?? 'free',
     used: generationUsage.count,
     limit: dailyGenerationLimit,
-    remaining: Math.max(0, dailyGenerationLimit - generationUsage.count),
+    remaining: isTester ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
   };
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
     if (!nextRecipes.length) return;
@@ -474,7 +518,18 @@ export default function App() {
   };
 
   const handleUpdateProfile = (nextProfile) => {
-    setProfile((current) => ({ ...current, ...nextProfile }));
+    setProfile((current) => {
+      const updated = { ...current, ...nextProfile };
+      // Supabase にも保存
+      if (user && isSupabaseConfigured) {
+        upsertProfile(user.id, {
+          email: user.email,
+          display_name: nextProfile.name ?? updated.name,
+          plan: nextProfile.plan ?? updated.plan,
+        }).catch((err) => console.error('プロフィール保存エラー', err));
+      }
+      return updated;
+    });
   };
 
   const handleGenerateRecipes = async (ingredients, source = 'text', conditions = ['おまかせ']) => {
@@ -751,6 +806,7 @@ export default function App() {
             onAddRecipes={handleAddRecipes}
             onAnalyzePhoto={handleAnalyzePhoto}
             onChangeDetectedIngredients={handleChangeDetectedIngredients}
+            isAdmin={isAdmin}
             onUpdateProfile={handleUpdateProfile}
             onSelectRecipe={handleSelectRecipe}
             onSelectGeneration={handleSelectGeneration}

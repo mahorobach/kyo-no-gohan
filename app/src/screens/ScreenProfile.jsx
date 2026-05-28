@@ -75,27 +75,8 @@ function SettingRow({ title, description, badge }) {
   );
 }
 
-function PlanButton({ active, children, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1,
-        height: 42,
-        borderRadius: 14,
-        border: `1px solid ${active ? T.terracotta : T.line}`,
-        background: active ? T.terracottaTint : T.surface,
-        color: active ? T.terracottaDeep : T.ink,
-        fontFamily: FONT.sans,
-        fontSize: 13,
-        fontWeight: 700,
-        cursor: 'pointer',
-      }}
-    >
-      {children}
-    </button>
-  );
-}
+const PLAN_LABELS = { free: '無料', tester: 'テスター', paid: '有料' };
+const PLAN_TONES  = { free: 'sage',  tester: 'amber',   paid: 'terracotta' };
 
 export default function ScreenProfile({
   navigate,
@@ -104,6 +85,7 @@ export default function ScreenProfile({
   recentGenerations = [],
   generationStatus,
   completedRecipe,
+  isAdmin = false,
   onUpdateProfile,
   onSignOut,
 }) {
@@ -251,35 +233,28 @@ export default function ScreenProfile({
             padding: '16px',
           }}>
             <div style={{
-              fontFamily: FONT.serif,
-              fontSize: 18,
-              color: T.ink,
-              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}>
-              生成プラン
+              <div style={{ fontFamily: FONT.serif, fontSize: 18, color: T.ink, fontWeight: 600 }}>
+                生成プラン
+              </div>
+              <Tag tone={PLAN_TONES[generationStatus?.plan] ?? 'sage'}>
+                {PLAN_LABELS[generationStatus?.plan] ?? '無料'}
+              </Tag>
             </div>
             <div style={{
               fontFamily: FONT.sans,
               fontSize: 11,
               color: T.inkSoft,
               lineHeight: 1.6,
-              marginTop: 5,
+              marginTop: 6,
             }}>
-              今日の生成 {generationStatus?.used ?? 0} / {generationStatus?.limit ?? 3}回
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <PlanButton
-                active={(profile.plan ?? 'free') === 'free'}
-                onClick={() => onUpdateProfile && onUpdateProfile({ plan: 'free' })}
-              >
-                無料 3回/日
-              </PlanButton>
-              <PlanButton
-                active={profile.plan === 'paid'}
-                onClick={() => onUpdateProfile && onUpdateProfile({ plan: 'paid' })}
-              >
-                有料 10回/日
-              </PlanButton>
+              今日の生成 {generationStatus?.used ?? 0}
+              {generationStatus?.plan === 'tester'
+                ? ' 回 / 無制限'
+                : ` / ${generationStatus?.limit ?? 3}回`}
             </div>
           </div>
         </div>
@@ -320,6 +295,30 @@ export default function ScreenProfile({
             友人レビュー中です。レシピの自然さ、材料の使い方、毎日使いたくなるかを見てもらう段階です。
           </div>
         </div>
+
+        {/* 管理画面ボタン（管理者のみ表示） */}
+        {isAdmin && (
+          <div style={{ padding: '16px 22px 0' }}>
+            <button
+              onClick={() => navigate('admin')}
+              style={{
+                width: '100%',
+                height: 46,
+                borderRadius: 16,
+                border: `1px solid ${T.terracotta}`,
+                background: T.terracottaTint,
+                color: T.terracottaDeep,
+                fontFamily: FONT.sans,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                letterSpacing: '0.06em',
+              }}
+            >
+              管理画面
+            </button>
+          </div>
+        )}
 
         {/* ログアウトボタン */}
         {onSignOut && (
