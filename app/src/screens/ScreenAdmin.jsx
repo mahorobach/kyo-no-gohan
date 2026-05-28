@@ -25,7 +25,10 @@ export default function ScreenAdmin({ navigate }) {
   useEffect(() => {
     fetchAllProfiles()
       .then(setProfiles)
-      .catch(() => setError('ユーザー一覧の取得に失敗しました'))
+      .catch((fetchError) => {
+        console.error('ユーザー一覧取得エラー', fetchError);
+        setError(`ユーザー一覧の取得に失敗しました: ${fetchError.message ?? '詳細不明'}`);
+      })
       .finally(() => setLoading(false));
   }, []);
 
