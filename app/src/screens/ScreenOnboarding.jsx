@@ -222,7 +222,7 @@ export default function ScreenOnboarding() {
         </button>
 
         <button
-          onClick={() => { setSignupDone(false); setIsSignup(false); setMode('email'); setResendStatus(null); }}
+          onClick={() => { setSignupDone(false); setIsSignup(true); setMode('email'); setResendStatus(null); }}
           style={{
             fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted,
             background: 'none', border: 'none', cursor: 'pointer', marginTop: 0,
