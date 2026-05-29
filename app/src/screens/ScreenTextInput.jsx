@@ -144,31 +144,19 @@ export default function ScreenTextInput({
           ))}
         </div>
 
-        {/* ヘルパー */}
+        {/* きぶん選択ヘッダー */}
         <div style={{ padding: '20px 22px 0' }}>
-          <Eyebrow>食材を1つずつ追加</Eyebrow>
+          <Eyebrow>きょうのきぶん</Eyebrow>
           <div style={{
             fontFamily: FONT.serif, fontSize: 18, color: T.ink, fontWeight: 600,
             lineHeight: 1.5, marginTop: 8,
           }}>
-            冷蔵庫にあるものを<br />教えてください
+            どんな料理にしますか？
           </div>
-          {generationStatus && (
-            <div style={{
-              fontFamily: FONT.sans,
-              fontSize: 11,
-              color: reachedLimit ? T.terracottaDeep : T.inkMuted,
-              lineHeight: 1.6,
-              marginTop: 8,
-            }}>
-              今日の生成 {generationStatus.used} / {generationStatus.limit}回
-              {reachedLimit ? '。今日はここまでです。' : `。あと${generationStatus.remaining}回つくれます。`}
-            </div>
-          )}
         </div>
 
         {/* 生成条件 */}
-        <div style={{ padding: '18px 22px 0' }}>
+        <div style={{ padding: '14px 22px 0' }}>
           <div style={{
             display: 'flex',
             alignItems: 'baseline',
@@ -176,7 +164,7 @@ export default function ScreenTextInput({
             marginBottom: 8,
           }}>
             <div style={{ fontFamily: FONT.sans, fontSize: 11, color: T.inkMuted, letterSpacing: '0.12em' }}>
-              希望に近いもの
+              カテゴリーを選ぶ
             </div>
             <div style={{ fontFamily: FONT.sans, fontSize: 11, color: T.inkMuted }}>
               最大2つ
@@ -208,8 +196,31 @@ export default function ScreenTextInput({
           </div>
         </div>
 
+        {/* 食材入力ヘッダー */}
+        <div style={{ padding: '22px 22px 0' }}>
+          <Eyebrow>つぎに、食材を入力</Eyebrow>
+          <div style={{
+            fontFamily: FONT.serif, fontSize: 16, color: T.ink, fontWeight: 600,
+            lineHeight: 1.5, marginTop: 6,
+          }}>
+            冷蔵庫にあるものを<br />教えてください
+          </div>
+          {generationStatus && (
+            <div style={{
+              fontFamily: FONT.sans,
+              fontSize: 11,
+              color: reachedLimit ? T.terracottaDeep : T.inkMuted,
+              lineHeight: 1.6,
+              marginTop: 6,
+            }}>
+              今日の生成 {generationStatus.used} / {generationStatus.limit}回
+              {reachedLimit ? '。今日はここまでです。' : `。あと${generationStatus.remaining}回つくれます。`}
+            </div>
+          )}
+        </div>
+
         {/* 入力フィールド */}
-        <div style={{ padding: '18px 22px 0' }}>
+        <div style={{ padding: '14px 22px 0' }}>
           <div style={{
             background: T.surface, borderRadius: 14,
             border: `1.5px solid ${T.terracotta}`,
