@@ -3,7 +3,7 @@ import { T, FONT } from '../tokens';
 import Paper from '../components/Paper';
 import Tag from '../components/Tag';
 import NavBack from '../components/NavBack';
-import { fetchAllProfiles, setProfileAdmin, upsertProfile } from '../lib/supabase';
+import { fetchAllProfiles, setProfileAdmin, updateProfilePlan } from '../lib/supabase';
 
 const PLANS = [
   { key: 'free',   label: '無料',     tone: 'sage' },
@@ -36,13 +36,13 @@ export default function ScreenAdmin({ navigate }) {
     setUpdating(userId);
     setError(null);
     try {
-      await upsertProfile(userId, { plan });
+      await updateProfilePlan(userId, plan);
       setProfiles((current) =>
         current.map((p) => (p.user_id === userId ? { ...p, plan } : p))
       );
     } catch (updateError) {
       console.error('プラン変更エラー', updateError);
-      setError('プランの変更に失敗しました');
+      setError(`プランの変更に失敗しました: ${updateError.message ?? '詳細不明'}`);
     } finally {
       setUpdating(null);
     }

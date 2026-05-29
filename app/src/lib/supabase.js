@@ -51,6 +51,16 @@ export const fetchAllProfiles = async () => {
   return data ?? [];
 };
 
+// 管理画面からプランだけを更新（既存プロフィール行を更新する）
+export const updateProfilePlan = async (userId, plan) => {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from('profiles')
+    .update({ plan, updated_at: new Date().toISOString() })
+    .eq('user_id', userId);
+  if (error) throw error;
+};
+
 // 管理者フラグを変更（管理者のみ RPC で許可）
 export const setProfileAdmin = async (userId, isAdmin) => {
   if (!supabase) return;

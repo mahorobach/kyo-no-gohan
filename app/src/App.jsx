@@ -29,7 +29,7 @@ const PAID_DAILY_GENERATION_LIMIT = 10;
 const ADMIN_EMAIL = 'dokakao@gmail.com';
 const ADMIN_EMAILS = [ADMIN_EMAIL, 'dokakao@yahoo.co.jp'];
 const ADMIN_USER_ID = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4';
-const APP_VERSION = '2026.05.29.4';
+const APP_VERSION = '2026.05.29.5';
 
 const isAdminUser = (user) => {
   const emails = [
