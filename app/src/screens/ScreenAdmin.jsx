@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { T, FONT } from '../tokens';
 import Paper from '../components/Paper';
-import Tag from '../components/Tag';
 import NavBack from '../components/NavBack';
 import { fetchAllProfiles, setProfileAdmin, updateProfilePlan } from '../lib/supabase';
 
-const PLANS = [
-  { key: 'free',   label: '無料',     tone: 'sage' },
-  { key: 'tester', label: 'テスター', tone: 'amber' },
-  { key: 'paid',   label: '有料',     tone: 'terracotta' },
+const USER_TYPES = [
+  { key: 'free', label: '無料', background: T.sageTint, color: T.sageDeep },
+  { key: 'paid', label: '有料', background: T.terracottaTint, color: T.terracottaDeep },
+  { key: 'tester', label: 'テスター', background: T.amberTint, color: '#7A4F12' },
+  { key: 'admin', label: '管理者', background: T.amberTint, color: '#7A4F12' },
 ];
 
 const formatDate = (iso) => {
@@ -32,33 +32,42 @@ export default function ScreenAdmin({ navigate }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleChangePlan = async (userId, plan) => {
-    setUpdating(userId);
-    setError(null);
-    try {
-      await updateProfilePlan(userId, plan);
-      setProfiles((current) =>
-        current.map((p) => (p.user_id === userId ? { ...p, plan } : p))
-      );
-    } catch (updateError) {
-      console.error('プラン変更エラー', updateError);
-      setError(`プランの変更に失敗しました: ${updateError.message ?? '詳細不明'}`);
-    } finally {
-      setUpdating(null);
-    }
+  const getUserType = (profile) => {
+    if (profile.is_admin) return 'admin';
+    return USER_TYPES.some((type) => type.key === profile.plan) ? profile.plan : 'free';
   };
 
-  const handleChangeAdmin = async (userId, isAdmin) => {
+  const handleChangeUserType = async (profile, nextType) => {
+    const userId = profile.user_id;
+    const currentType = getUserType(profile);
+    if (nextType === currentType) return;
+
     setUpdating(userId);
     setError(null);
     try {
-      await setProfileAdmin(userId, isAdmin);
+      if (nextType === 'admin') {
+        await setProfileAdmin(userId, true);
+      } else {
+        if (profile.is_admin) {
+          await setProfileAdmin(userId, false);
+        }
+        await updateProfilePlan(userId, nextType);
+      }
+
       setProfiles((current) =>
-        current.map((p) => (p.user_id === userId ? { ...p, is_admin: isAdmin } : p))
+        current.map((p) => (
+          p.user_id === userId
+            ? {
+              ...p,
+              plan: nextType === 'admin' ? p.plan : nextType,
+              is_admin: nextType === 'admin',
+            }
+            : p
+        ))
       );
     } catch (updateError) {
-      console.error('管理者権限変更エラー', updateError);
-      setError('管理者権限の変更に失敗しました');
+      console.error('ユーザー種類変更エラー', updateError);
+      setError(`ユーザー種類の変更に失敗しました: ${updateError.message ?? '詳細不明'}`);
     } finally {
       setUpdating(null);
     }
@@ -126,8 +135,9 @@ export default function ScreenAdmin({ navigate }) {
           )}
 
           {profiles.map((user) => {
-            const currentPlan = PLANS.find((p) => p.key === user.plan) ?? PLANS[0];
             const isUpdating = updating === user.user_id;
+            const currentType = getUserType(user);
+            const selectedType = USER_TYPES.find((type) => type.key === currentType) ?? USER_TYPES[0];
 
             return (
               <div
@@ -143,8 +153,8 @@ export default function ScreenAdmin({ navigate }) {
                   transition: 'opacity 0.15s',
                 }}
               >
-                {/* ユーザー情報 + 現在のプラン */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                {/* ユーザー情報 + ユーザー種類 */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{
                       fontFamily: FONT.serif,
@@ -169,86 +179,31 @@ export default function ScreenAdmin({ navigate }) {
                       {user.email || user.user_id}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {user.is_admin && <Tag tone="amber">管理者</Tag>}
-                    <Tag tone={currentPlan.tone}>{currentPlan.label}</Tag>
-                  </div>
-                </div>
-
-                {/* プラン変更ボタン */}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {PLANS.map((plan) => {
-                    const isActive = user.plan === plan.key;
-                    return (
-                      <button
-                        key={plan.key}
-                        disabled={isActive || isUpdating}
-                        onClick={() => handleChangePlan(user.user_id, plan.key)}
-                        style={{
-                          flex: 1,
-                          height: 34,
-                          borderRadius: 10,
-                          border: `1px solid ${isActive ? T.terracotta : T.line}`,
-                          background: isActive ? T.terracottaTint : T.bg,
-                          color: isActive ? T.terracottaDeep : T.inkSoft,
-                          fontFamily: FONT.sans,
-                          fontSize: 12,
-                          fontWeight: isActive ? 700 : 400,
-                          cursor: isActive || isUpdating ? 'default' : 'pointer',
-                        }}
-                      >
-                        {plan.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* 管理者権限の変更 */}
-                <div style={{
-                  marginTop: 10,
-                  paddingTop: 10,
-                  borderTop: `1px dashed ${T.line}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                }}>
-                  <div>
-                    <div style={{
-                      fontFamily: FONT.serif,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: T.ink,
-                    }}>
-                      管理者権限
-                    </div>
-                    <div style={{
-                      fontFamily: FONT.sans,
-                      fontSize: 10,
-                      color: T.inkMuted,
-                      marginTop: 2,
-                    }}>
-                      管理画面への入室を許可します
-                    </div>
-                  </div>
-                  <button
+                  <select
+                    value={currentType}
                     disabled={isUpdating}
-                    onClick={() => handleChangeAdmin(user.user_id, !user.is_admin)}
+                    onChange={(event) => handleChangeUserType(user, event.target.value)}
                     style={{
-                      width: 104,
-                      height: 34,
-                      borderRadius: 10,
-                      border: `1px solid ${user.is_admin ? T.terracotta : T.line}`,
-                      background: user.is_admin ? T.terracottaTint : T.bg,
-                      color: user.is_admin ? T.terracottaDeep : T.inkSoft,
+                      width: 116,
+                      height: 38,
+                      borderRadius: 999,
+                      border: `1px solid ${T.line}`,
+                      background: selectedType.background,
+                      color: selectedType.color,
                       fontFamily: FONT.sans,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: 700,
                       cursor: isUpdating ? 'default' : 'pointer',
+                      padding: '0 12px',
+                      outline: 'none',
                     }}
                   >
-                    {user.is_admin ? '解除する' : '管理者にする'}
-                  </button>
+                    {USER_TYPES.map((type) => (
+                      <option key={type.key} value={type.key}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* 登録日 */}

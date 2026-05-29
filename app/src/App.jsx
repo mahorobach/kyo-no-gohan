@@ -29,7 +29,7 @@ const PAID_DAILY_GENERATION_LIMIT = 10;
 const ADMIN_EMAIL = 'dokakao@gmail.com';
 const ADMIN_EMAILS = [ADMIN_EMAIL, 'dokakao@yahoo.co.jp'];
 const ADMIN_USER_ID = '6f87dc5a-d61f-4fd9-ad6b-cd79ff5011b4';
-const APP_VERSION = '2026.05.29.5';
+const APP_VERSION = '2026.05.29.6';
 
 const isAdminUser = (user) => {
   const emails = [
@@ -88,7 +88,8 @@ const getTodayKey = () => {
   return `${year}-${month}-${date}`;
 };
 
-const getGenerationLimit = (profile = {}) => {
+const getGenerationLimit = (profile = {}, isAdmin = false) => {
+  if (isAdmin) return Infinity;
   if (profile.plan === 'tester') return Infinity;
   if (profile.plan === 'paid') return PAID_DAILY_GENERATION_LIMIT;
   return FREE_DAILY_GENERATION_LIMIT;
@@ -456,15 +457,15 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const dailyGenerationLimit = getGenerationLimit(profile);
-  const isTester = profile.plan === 'tester';
+  const isAdmin = isAdminFromDb || isAdminUser(user);
+  const dailyGenerationLimit = getGenerationLimit(profile, isAdmin);
+  const isUnlimited = isAdmin || profile.plan === 'tester';
   const generationStatus = {
-    plan: profile.plan ?? 'free',
+    plan: isAdmin ? 'admin' : (profile.plan ?? 'free'),
     used: generationUsage.count,
     limit: dailyGenerationLimit,
-    remaining: isTester ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
+    remaining: isUnlimited ? Infinity : Math.max(0, dailyGenerationLimit - generationUsage.count),
   };
-  const isAdmin = isAdminFromDb || isAdminUser(user);
 
   const rememberGeneration = ({ recipes: nextRecipes, ingredients, conditions }) => {
     if (!nextRecipes.length) return;

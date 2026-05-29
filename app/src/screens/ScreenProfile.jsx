@@ -75,8 +75,8 @@ function SettingRow({ title, description, badge }) {
   );
 }
 
-const PLAN_LABELS = { free: '無料', tester: 'テスター', paid: '有料' };
-const PLAN_TONES  = { free: 'sage',  tester: 'amber',   paid: 'terracotta' };
+const PLAN_LABELS = { free: '無料', tester: 'テスター', paid: '有料', admin: '管理者' };
+const PLAN_TONES  = { free: 'sage',  tester: 'amber',   paid: 'terracotta', admin: 'amber' };
 
 export default function ScreenProfile({
   navigate,
@@ -277,7 +277,7 @@ export default function ScreenProfile({
               marginTop: 6,
             }}>
               今日の生成 {generationStatus?.used ?? 0}
-              {generationStatus?.plan === 'tester'
+              {generationStatus?.plan === 'tester' || generationStatus?.plan === 'admin'
                 ? ' 回 / 無制限'
                 : ` / ${generationStatus?.limit ?? 3}回`}
             </div>
