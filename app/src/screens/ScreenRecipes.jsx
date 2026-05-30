@@ -273,7 +273,7 @@ export default function ScreenRecipes({
       }}>
         <NavBack onClick={() => navigate(backTo)} />
         <div style={{ fontFamily: FONT.sans, fontSize: 12, color: T.inkMuted, letterSpacing: '0.08em' }}>
-          すてっぷ 3 / 4
+          ステップ 3 / 4
         </div>
         <div style={{
           width: 38, height: 38, borderRadius: 19,

@@ -20,7 +20,7 @@ const isSameDate = (dateText, base = new Date()) => {
 
 function HomeGreeting({ name = 'さくらこ', avatarUrl }) {
   const now = new Date();
-  const dayNames = ['にちようび', 'げつようび', 'かようび', 'すいようび', 'もくようび', 'きんようび', 'どようび'];
+  const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
   const monthDay = `${now.getMonth() + 1}月 ${now.getDate()}日`;
   const day = dayNames[now.getDay()];
 

@@ -62,7 +62,7 @@ export default function ScreenIngredients({
 
       {/* タイトル */}
       <div style={{ padding: '20px 22px 0' }}>
-        <Eyebrow>すてっぷ 2</Eyebrow>
+        <Eyebrow>ステップ 2</Eyebrow>
         <div style={{
           fontFamily: FONT.serif, fontSize: 26, fontWeight: 600, color: T.ink,
           lineHeight: 1.35, marginTop: 10,
