@@ -205,6 +205,21 @@ const getConditionLabel = (conditions = []) => normalizeConditions(conditions).j
 
 const limitGeneratedRecipes = (recipes = []) => recipes.slice(0, 2);
 
+// API レスポンスの ingredients.have を入力食材セットで上書きする
+// （AIがサンプル通りに全て true を返すことがあるため、クライアントで正しく設定する）
+const markIngredientHave = (recipes = [], inputIngredients = []) => {
+  const inputNamesSet = new Set(
+    inputIngredients.map((i) => i.name.replace(/\s+/g, '').trim()),
+  );
+  return recipes.map((recipe) => ({
+    ...recipe,
+    ingredients: (recipe.ingredients ?? []).map((ing) => ({
+      ...ing,
+      have: inputNamesSet.has((ing.name ?? '').replace(/\s+/g, '').trim()),
+    })),
+  }));
+};
+
 const makeGeneration = ({ recipes, ingredients, conditions }) => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   createdAt: new Date().toISOString(),
@@ -656,7 +671,8 @@ export default function App() {
 
     try {
       const result = await fetchRecipes(ingredients.map((i) => i.name), selectedConditions);
-      const generatedRecipes = limitGeneratedRecipes(result.recipes);
+      // have フラグを入力食材セットで正しく上書きする
+      const generatedRecipes = limitGeneratedRecipes(markIngredientHave(result.recipes, ingredients));
       setRecipes(generatedRecipes);
       rememberGeneration({ recipes: generatedRecipes, ingredients, conditions: selectedConditions });
     } catch (apiError) {
@@ -698,7 +714,11 @@ export default function App() {
         selectedConditions,
         existingTitles,
       );
-      const { merged, added } = mergeUniqueRecipes(existingRecipes, limitGeneratedRecipes(result.recipes));
+      // have フラグを入力食材セットで正しく上書きする
+      const { merged, added } = mergeUniqueRecipes(
+        existingRecipes,
+        limitGeneratedRecipes(markIngredientHave(result.recipes, submittedIngredients)),
+      );
       setRecipes(merged);
       rememberGeneration({ recipes: added, ingredients: submittedIngredients, conditions: selectedConditions });
       if (!added.length) {

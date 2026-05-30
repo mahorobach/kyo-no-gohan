@@ -31,7 +31,8 @@ const SYSTEM_PROMPT = `あなたは日本の家庭料理に精通したプロシ
       "category": "おまかせ または 指定された生成条件",
       "description": "料理の説明（2文以内）",
       "ingredients": [
-        { "name": "食材名", "qty": "分量", "have": true, "extra": false }
+        { "name": "入力された食材名", "qty": "分量", "have": true },
+        { "name": "追加した調味料名", "qty": "分量", "have": false }
       ],
       "steps": ["手順1", "手順2", "手順3", "手順4"]
     }
