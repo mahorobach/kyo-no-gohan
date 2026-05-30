@@ -372,6 +372,7 @@ export default function App() {
   const [isAdminFromDb, setIsAdminFromDb] = useState(false);
   const [recipes, setRecipes] = useState(null);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [detailSource, setDetailSource] = useState('recipes'); // 詳細画面の戻り先
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [submittedIngredients, setSubmittedIngredients] = useState([]);
@@ -714,8 +715,10 @@ export default function App() {
     }
   };
 
-  const handleSelectRecipe = (recipe) => {
+  // from: どの画面から詳細に遷移したか（戻る先に使用）
+  const handleSelectRecipe = (recipe, from = 'recipes') => {
     setSelectedRecipe(recipe);
+    setDetailSource(from);
     navigate('detail');
   };
 
@@ -946,6 +949,7 @@ export default function App() {
             onChangeDetectedIngredients={handleChangeDetectedIngredients}
             isAdmin={isAdmin}
             onUpdateProfile={handleUpdateProfile}
+            detailSource={detailSource}
             onSelectRecipe={handleSelectRecipe}
             onSelectGeneration={handleSelectGeneration}
             onToggleFavorite={handleToggleFavorite}

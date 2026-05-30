@@ -54,7 +54,7 @@ export default function ScreenSaved({
 
   const handleSelectRecipe = (recipe) => {
     if (onSelectRecipe) {
-      onSelectRecipe(recipe);
+      onSelectRecipe(recipe, 'saved'); // 戻り先として 'saved' を渡す
     } else {
       navigate('detail');
     }
@@ -188,16 +188,24 @@ export default function ScreenSaved({
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
                   <Tag tone={recipe.tone ?? 'sage'}>
-                    {recipe.completedCount ? `${recipe.completedCount}回つくった` : 'お気に入り'}
+                    {recipe.completedCount ? `${recipe.completedCount}回つくった` : '保存済み'}
                   </Tag>
                   <span style={{ fontFamily: FONT.mono, fontSize: 11, color: T.terracottaDeep }}>
                     {recipe.time ?? '--'}分
                   </span>
-                  <span style={{ marginLeft: 'auto', color: T.terracotta }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 3h12v18l-6-4-6 4V3z" />
-                    </svg>
-                  </span>
+                  {/* ハート・ブックマークインジケーター */}
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {recipe.favoritedAt && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={T.terracotta} stroke={T.terracotta} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 14c1.5-2.5 3-4.5 3-7 0-2.5-2-4-4.5-4S13 5 12 7c-1-2-3-4-5.5-4S2 4.5 2 7c0 2.5 1.5 4.5 3 7l7 7 7-7z" />
+                      </svg>
+                    )}
+                    {recipe.bookmarkedAt && (
+                      <svg width="12" height="14" viewBox="0 0 24 24" fill={T.terracotta} stroke={T.terracotta} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
