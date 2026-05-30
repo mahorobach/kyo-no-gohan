@@ -59,7 +59,7 @@ function Divv() {
   return <div style={{ width: 1, height: 12, background: T.line }} />;
 }
 
-function RecipeCard({ r, idx, featured, onPress }) {
+function RecipeCard({ r, idx, featured, onPress, isFavorited, isBookmarked }) {
   return (
     <div onClick={onPress} style={{
       background: T.surface, borderRadius: 22,
@@ -126,8 +126,23 @@ function RecipeCard({ r, idx, featured, onPress }) {
 
       {/* カードボディ */}
       <div style={{ padding: '18px 18px 18px', minHeight: 150 }}>
-        <div style={{ fontFamily: FONT.sans, fontSize: 10, color: T.inkMuted, letterSpacing: '0.18em' }}>
-          {r.category ?? r.kana}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontFamily: FONT.sans, fontSize: 10, color: T.inkMuted, letterSpacing: '0.18em' }}>
+            {r.category ?? r.kana}
+          </div>
+          {/* ハート・ブックマークインジケーター */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            {isFavorited && (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill={T.terracotta} stroke={T.terracotta} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 14c1.5-2.5 3-4.5 3-7 0-2.5-2-4-4.5-4S13 5 12 7c-1-2-3-4-5.5-4S2 4.5 2 7c0 2.5 1.5 4.5 3 7l7 7 7-7z" />
+              </svg>
+            )}
+            {isBookmarked && (
+              <svg width="11" height="13" viewBox="0 0 24 24" fill={T.terracotta} stroke={T.terracotta} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+              </svg>
+            )}
+          </div>
         </div>
         {r.description && (
           <div style={{
@@ -207,6 +222,8 @@ function RecipeCard({ r, idx, featured, onPress }) {
   );
 }
 
+const normalizeTitle = (s = '') => s.replace(/\s+/g, '').trim();
+
 export default function ScreenRecipes({
   navigate,
   recipes,
@@ -218,6 +235,7 @@ export default function ScreenRecipes({
   generationLabel = 'おまかせ',
   addingRecipes,
   generationStatus,
+  savedRecipes = [],
   onSelectRecipe,
   onAddRecipes,
 }) {
@@ -322,12 +340,19 @@ export default function ScreenRecipes({
             flexShrink: 0,
           }}>{error}</div>
         )}
-        {!loading && visibleRecipes.map((r, i) => (
-          <RecipeCard
-            key={i} r={r} idx={i + 1} featured={i === 0}
-            onPress={() => onSelectRecipe ? onSelectRecipe(r) : navigate('detail')}
-          />
-        ))}
+        {!loading && visibleRecipes.map((r, i) => {
+          const matched = savedRecipes.find(
+            (s) => normalizeTitle(s.title) === normalizeTitle(r.title),
+          );
+          return (
+            <RecipeCard
+              key={i} r={r} idx={i + 1} featured={i === 0}
+              isFavorited={Boolean(matched?.favoritedAt)}
+              isBookmarked={Boolean(matched?.bookmarkedAt)}
+              onPress={() => onSelectRecipe ? onSelectRecipe(r) : navigate('detail')}
+            />
+          );
+        })}
 
         {addingRecipes && (
           <div style={{

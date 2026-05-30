@@ -738,7 +738,8 @@ export default function App() {
       const existing = current.find((item) => normalizeTitle(item.title) === recipeKey);
 
       if (existing?.favoritedAt) {
-        if (existing.completedCount || existing.lastCompletedAt) {
+        // ハート解除: 他のマーク（ブックマーク・完了）があれば残す
+        if (existing.completedCount || existing.lastCompletedAt || existing.bookmarkedAt) {
           return current.map((item) => {
             if (normalizeTitle(item.title) !== recipeKey) return item;
             const nextItem = { ...item };
@@ -746,7 +747,6 @@ export default function App() {
             return nextItem;
           });
         }
-
         return current.filter((item) => normalizeTitle(item.title) !== recipeKey);
       }
 
@@ -770,6 +770,47 @@ export default function App() {
     });
   };
 
+  const handleToggleBookmark = (recipe) => {
+    if (!recipe?.title) return;
+
+    setSavedRecipes((current) => {
+      const recipeKey = normalizeTitle(recipe.title);
+      const existing = current.find((item) => normalizeTitle(item.title) === recipeKey);
+
+      if (existing?.bookmarkedAt) {
+        // ブックマーク解除: 他のマーク（ハート・完了）があれば残す
+        if (existing.favoritedAt || existing.completedCount || existing.lastCompletedAt) {
+          return current.map((item) => {
+            if (normalizeTitle(item.title) !== recipeKey) return item;
+            const nextItem = { ...item };
+            delete nextItem.bookmarkedAt;
+            return nextItem;
+          });
+        }
+        return current.filter((item) => normalizeTitle(item.title) !== recipeKey);
+      }
+
+      if (existing) {
+        return current.map((item) => (
+          normalizeTitle(item.title) === recipeKey
+            ? { ...item, bookmarkedAt: new Date().toISOString() }
+            : item
+        ));
+      }
+
+      // savedRecipes に未登録のレシピを新規ブックマーク
+      return [
+        {
+          ...recipe,
+          savedAt: new Date().toISOString(),
+          bookmarkedAt: new Date().toISOString(),
+          completedCount: 0,
+        },
+        ...current,
+      ];
+    });
+  };
+
   const handleCompleteRecipe = (recipe) => {
     const completed = recipe ? { ...recipe, completedAt: new Date().toISOString() } : null;
     setCompletedRecipe(completed);
@@ -786,6 +827,7 @@ export default function App() {
                 savedAt: item.savedAt ?? completed.completedAt,
                 completedCount: (item.completedCount ?? 1) + 1,
                 lastCompletedAt: completed.completedAt,
+                bookmarkedAt: item.bookmarkedAt ?? completed.completedAt, // 作ったら自動ブックマーク
               }
               : item
           ));
@@ -797,6 +839,7 @@ export default function App() {
             savedAt: completed.completedAt,
             completedCount: 1,
             lastCompletedAt: completed.completedAt,
+            bookmarkedAt: completed.completedAt, // 作ったら自動ブックマーク
           },
           ...current,
         ];
@@ -906,6 +949,7 @@ export default function App() {
             onSelectRecipe={handleSelectRecipe}
             onSelectGeneration={handleSelectGeneration}
             onToggleFavorite={handleToggleFavorite}
+            onToggleBookmark={handleToggleBookmark}
             onCompleteRecipe={handleCompleteRecipe}
             onSignOut={signOut}
           />

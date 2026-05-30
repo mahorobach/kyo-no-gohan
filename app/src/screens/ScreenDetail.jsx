@@ -47,6 +47,7 @@ export default function ScreenDetail({
   selectedRecipe,
   savedRecipes = [],
   onToggleFavorite,
+  onToggleBookmark,
 }) {
   const [favoriteMessage, setFavoriteMessage] = useState('');
   const recipe = selectedRecipe ?? DEFAULT_RECIPE;
@@ -73,12 +74,21 @@ export default function ScreenDetail({
   const isFavorite = savedRecipes.some((item) => (
     normalizeTitle(item.title) === normalizeTitle(title) && item.favoritedAt
   ));
+  const isBookmarked = savedRecipes.some((item) => (
+    normalizeTitle(item.title) === normalizeTitle(title) && item.bookmarkedAt
+  ));
 
   const handleFavorite = () => {
     if (!onToggleFavorite) return;
-
     onToggleFavorite(recipe);
-    setFavoriteMessage(isFavorite ? 'お気に入りを解除しました' : 'レシピ帳に保存しました');
+    setFavoriteMessage(isFavorite ? 'お気に入りを解除しました' : 'お気に入りに追加しました');
+    window.setTimeout(() => setFavoriteMessage(''), 1600);
+  };
+
+  const handleBookmark = () => {
+    if (!onToggleBookmark) return;
+    onToggleBookmark(recipe);
+    setFavoriteMessage(isBookmarked ? '保存を解除しました' : 'レシピを保存しました');
     window.setTimeout(() => setFavoriteMessage(''), 1600);
   };
 
@@ -122,9 +132,10 @@ export default function ScreenDetail({
                 <path d="M4 12v8a1 1 0 001 1h14a1 1 0 001-1v-8M16 6l-4-4-4 4M12 2v13" />
               </svg>
             </CamPill>
-            <CamPill active={isFavorite} onClick={handleFavorite}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 14c1.5-2.5 3-4.5 3-7 0-2.5-2-4-4.5-4S13 5 12 7c-1-2-3-4-5.5-4S2 4.5 2 7c0 2.5 1.5 4.5 3 7l7 7 7-7z" />
+            {/* ブックマークボタン（保存） */}
+            <CamPill active={isBookmarked} onClick={handleBookmark}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
               </svg>
             </CamPill>
           </div>
