@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ScreenOnboarding from './screens/ScreenOnboarding';
 import ScreenPasswordReset from './screens/ScreenPasswordReset';
 import HomeA from './screens/HomeA';
@@ -15,7 +15,16 @@ import ScreenProfile from './screens/ScreenProfile';
 import { analyzeIngredientPhotos, fetchRecipes } from './lib/gemini';
 import { recipePatterns } from './data/recipePatterns';
 import useAuth from './contexts/useAuth';
-import { isSupabaseConfigured, fetchProfile, upsertProfile } from './lib/supabase';
+import {
+  isSupabaseConfigured,
+  fetchProfile,
+  upsertProfile,
+  fetchSavedRecipes,
+  replaceSavedRecipes,
+  fetchGenerationHistory,
+  addGenerationHistory,
+  countTodayGenerations,
+} from './lib/supabase';
 import { T, FONT } from './tokens';
 import ScreenAdmin from './screens/ScreenAdmin';
 
@@ -358,6 +367,8 @@ const SCREENS = {
 export default function App() {
   const { user, loading: authLoading, needsPasswordReset, signOut } = useAuth();
   const [screen, setScreen] = useState('onboarding');
+  // Supabase 初期同期が完了したユーザーID を記録（未完了なら null）
+  const syncedUserId = useRef(null);
   const [isAdminFromDb, setIsAdminFromDb] = useState(false);
   const [recipes, setRecipes] = useState(null);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
@@ -385,6 +396,12 @@ export default function App() {
       window.localStorage.setItem(SAVED_RECIPES_STORAGE_KEY, JSON.stringify(savedRecipes));
     } catch (error) {
       console.error('レシピ帳の保存に失敗しました', error);
+    }
+    // Supabase への同期（初期ロード完了後のみ実行して上書き事故を防ぐ）
+    if (syncedUserId.current && isSupabaseConfigured) {
+      replaceSavedRecipes(syncedUserId.current, savedRecipes).catch((err) => {
+        console.error('レシピ帳のSupabase保存に失敗しました', err);
+      });
     }
   }, [savedRecipes]);
 
@@ -450,6 +467,51 @@ export default function App() {
       } catch (err) {
         console.error('プロフィール同期エラー', err);
       }
+
+      // ── レシピ帳の同期 ──────────────────────────────────
+      try {
+        const remoteSaved = await fetchSavedRecipes(user.id);
+        if (remoteSaved.length > 0) {
+          // Supabase にデータがある → state に反映
+          setSavedRecipes(remoteSaved);
+        } else {
+          // Supabase が空 → localStorage のデータを移行
+          const localSaved = loadSavedRecipes();
+          if (localSaved.length > 0) {
+            await replaceSavedRecipes(user.id, localSaved);
+          }
+        }
+      } catch (err) {
+        console.error('レシピ帳の同期エラー', err);
+      }
+
+      // ── 献立履歴の同期 ───────────────────────────────────
+      try {
+        const remoteHistory = await fetchGenerationHistory(user.id);
+        if (remoteHistory.length > 0) {
+          // Supabase にデータがある → state に反映
+          setRecentGenerations(remoteHistory);
+        } else {
+          // Supabase が空 → localStorage のデータを移行
+          const localHistory = loadRecentGenerations();
+          for (const gen of localHistory) {
+            await addGenerationHistory(user.id, gen).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.error('献立履歴の同期エラー', err);
+      }
+
+      // ── 今日の生成回数を Supabase から取得（A案） ────────
+      try {
+        const todayCount = await countTodayGenerations(user.id);
+        setGenerationUsage({ date: getTodayKey(), count: todayCount });
+      } catch (err) {
+        console.error('生成回数の同期エラー', err);
+      }
+
+      // 初期同期完了フラグを立てる
+      syncedUserId.current = user.id;
     };
 
     syncProfile();
@@ -480,6 +542,13 @@ export default function App() {
       const next = [nextGeneration, ...current];
       return next.slice(0, RECENT_GENERATION_LIMIT);
     });
+
+    // Supabase にも保存
+    if (user?.id && isSupabaseConfigured) {
+      addGenerationHistory(user.id, nextGeneration).catch((err) => {
+        console.error('献立履歴のSupabase保存に失敗しました', err);
+      });
+    }
   };
 
   const consumeGeneration = () => {

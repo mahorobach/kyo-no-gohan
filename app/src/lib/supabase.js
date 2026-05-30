@@ -70,3 +70,98 @@ export const setProfileAdmin = async (userId, isAdmin) => {
   });
   if (error) throw error;
 };
+
+// ── レシピ帳操作 ──────────────────────────────────────────
+
+// お気に入りレシピ帳を取得（最新保存順）
+export const fetchSavedRecipes = async (userId) => {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('saved_recipes')
+    .select('recipe, saved_at')
+    .eq('user_id', userId)
+    .order('saved_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((row) => row.recipe);
+};
+
+// レシピ帳を丸ごと置き換え（削除→挿入）
+export const replaceSavedRecipes = async (userId, recipes) => {
+  if (!supabase) return;
+
+  // 既存レコードを全削除
+  const { error: deleteError } = await supabase
+    .from('saved_recipes')
+    .delete()
+    .eq('user_id', userId);
+  if (deleteError) throw deleteError;
+
+  // 空なら挿入不要
+  if (!recipes.length) return;
+
+  const rows = recipes.map((recipe) => ({
+    user_id: userId,
+    recipe,
+    saved_at: recipe.savedAt ?? recipe.favoritedAt ?? new Date().toISOString(),
+  }));
+
+  const { error: insertError } = await supabase
+    .from('saved_recipes')
+    .insert(rows);
+  if (insertError) throw insertError;
+};
+
+// ── 献立履歴操作 ──────────────────────────────────────────
+
+// 献立履歴を取得（最新 limit 件）
+export const fetchGenerationHistory = async (userId, limit = 12) => {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('generation_history')
+    .select('id, ingredients, conditions, recipes, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    ingredients: row.ingredients,
+    conditions: row.conditions,
+    recipes: row.recipes,
+  }));
+};
+
+// 献立履歴に1件追加（同じ id が来た場合は上書き）
+export const addGenerationHistory = async (userId, generation) => {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from('generation_history')
+    .upsert(
+      {
+        id: generation.id,
+        user_id: userId,
+        ingredients: generation.ingredients,
+        conditions: generation.conditions,
+        recipes: generation.recipes,
+        created_at: generation.createdAt,
+      },
+      { onConflict: 'id' }
+    );
+  if (error) throw error;
+};
+
+// 今日の生成回数を取得（A案: generation_history の今日の件数を数える）
+export const countTodayGenerations = async (userId) => {
+  if (!supabase) return 0;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const { count, error } = await supabase
+    .from('generation_history')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', todayStart.toISOString());
+  if (error) throw error;
+  return count ?? 0;
+};
